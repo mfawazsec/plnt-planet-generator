@@ -52,6 +52,35 @@ def _clear_input(tree, node, socket, value=None):
         s.default_value = value
 
 
+def _micro_tail(tree, micro, total):
+    """The end of the micro chain, which is not `micro_bu` itself.
+
+    core.surface_detail splices the optional relief features in FRONT of the
+    node they modulate: crater bowls, dune crests, lava crust and the strata
+    erosion term each insert themselves between `micro_bu` and whatever used
+    to consume it, so the real micro height is the LAST node in that chain,
+    not the first.
+
+    Wiring `micro_bu` straight into `total_disp` here -- which is what this
+    module used to do -- silently cut every one of those features out of the
+    displacement on the next quality change, and `apply_quality` runs on every
+    render. Crater Amount and Dune Amount were live sockets driving a dangling
+    branch; nothing they did reached a pixel.
+
+    Walk forward while there is exactly one consumer that is not `total`, and
+    hand back whatever the walk ends on. With no detail features attached that
+    is `micro_bu`, so the old behaviour is the empty case of the new one.
+    """
+    n = micro
+    seen = {n}
+    while True:
+        nxt = [l.to_node for l in n.outputs[0].links if l.to_node is not total]
+        if len(nxt) != 1 or nxt[0] in seen:
+            return n
+        n = nxt[0]
+        seen.add(n)
+
+
 def _snapshot(tree):
     """Remember the shipped wiring so a mode switch is reversible in-session."""
     if tree.get("plnt_lod_saved"):
@@ -92,14 +121,15 @@ def apply_mode(mode, tree_names=SHADERS, mat_names=MATERIALS,
             _relink(tree, disp, "Displacement", go, "Displacement")
             _relink(tree, total, "Value", disp, "Height")
 
+        tail = _micro_tail(tree, micro, total)
         if mode == 'MICRO':
             # residual is what pulls FIELD.elevation into the bump evaluation
             _clear_input(tree, total, 0, 0.0)
-            _relink(tree, micro, "Value", total, 1)
+            _relink(tree, tail, "Value", total, 1)
             _detach_field_modulation(tree, attr_slope, attr_depth)
         elif mode in ('BUMP', 'GEOMETRY', 'TRUE'):
             _relink(tree, resid, "Value", total, 0)
-            _relink(tree, micro, "Value", total, 1)
+            _relink(tree, tail, "Value", total, 1)
         acted["trees"].append(tn)
 
     method = {'NONE': 'BUMP', 'MICRO': 'BUMP', 'BUMP': 'BUMP',
