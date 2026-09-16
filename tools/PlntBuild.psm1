@@ -195,7 +195,7 @@ function Get-MarkedJsonText {
 
         The bash version used sed -n '/^MARKER/,$p' because several of these
         tools print with indent=1, and a tail -N slices a multi-line document
-        in half -- the parser then reports a failure that is entirely the
+        in half, and the parser then reports a failure that is entirely the
         harness's fault. Brace-matching from the marker is that idea done
         exactly: the equivalent of Python's raw_decode, stopping at the end of
         the first complete value and ignoring whatever Blender prints after it.

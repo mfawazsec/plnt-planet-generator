@@ -18,7 +18,7 @@ modes can be switched per shot at render time.
   MICRO  fine noise relief only; the field is not read by the bump chain.
   BUMP   full detail as bump. Correct silhouette from the base mesh only.
   GEOMETRY  full detail as real subdivided geometry, no bump. Measured
-            10% FASTER than the shipped BOTH setting on shot 02 -- real
+            10% FASTER than the shipped BOTH setting on shot 02: real
             geometry costs less here than the fake normals do.
   TRUE   full detail as real geometry plus bump. What close-ups need.
 """
@@ -66,7 +66,7 @@ def apply_mode(mode, tree_names=SHADERS, mat_names=MATERIALS,
     attr_slope / attr_depth: names of vertex attributes carrying slope and
     ocean depth. When given, MICRO reads its modulation from those instead of
     from the field, which is what actually removes the field from the bump
-    chain. Without them MICRO falls back to flat constants -- still fast, but
+    chain. Without them MICRO falls back to flat constants, still fast, but
     micro relief stops fading out over ocean.
     """
     mode = mode.upper()
@@ -126,7 +126,7 @@ def _detach_field_modulation(tree, attr_slope, attr_depth):
     reliefmod reads FIELD.slope and shorefade reads FIELD.ocean_depth. slope is
     a finite difference, so reading it forces the elevation group to run three
     times. Cutting these two links is what collapses MICRO to a single field
-    evaluation -- without it, MICRO still pays for the whole field.
+    evaluation; without it, MICRO still pays for the whole field.
     """
     for label, attr, fallback in (("reliefmod", attr_slope, 0.5),
                                   ("shorefade", attr_depth, 0.0)):

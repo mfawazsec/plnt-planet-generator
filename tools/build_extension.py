@@ -66,7 +66,7 @@ def main():
         open(os.path.join(EXT, mod + ".py"), "w").write(text)
         written.append(mod + ".py")
 
-    # ui.py stays inside core/ -- copying it to the package root would give it
+    # ui.py stays inside core/. Copying it to the package root would give it
     # a second identity whose `from . import params` resolves to the wrong
     # package and fails at registration.
     print("EXT_BUILT %d files -> %s" % (len(written), EXT))

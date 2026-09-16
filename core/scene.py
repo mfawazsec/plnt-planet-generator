@@ -44,7 +44,7 @@ def build_sun_rig(radius=RADIUS):
 
     PLNT_SunDir is parented to the sun at local (0, 0, 1). Because the sun sits
     at the pivot origin, that empty's world location IS the sun's Z axis. This
-    exists because matrix_world is not a dependency-tracked driver path -- a
+    exists because matrix_world is not a dependency-tracked driver path: a
     driver reading it silently freezes at its creation value, whereas
     TRANSFORMS/WORLD_SPACE location drivers do track.
     """
@@ -88,7 +88,7 @@ def set_sun(azimuth_deg=120.0, elevation_deg=20.0):
 
     Both produce a plausible sun, so nothing ever looked broken. Which one you
     got depended on which function had touched the rig last, and the shipped
-    .blend happened to have been left by the presets one -- so every hero shot
+    .blend happened to have been left by the presets one, so every hero shot
     was framed and lit against that convention. Rebuilding the scene from the
     builders ended with set_sun instead, rotated the lighting by 90 degrees on
     all ten shots, and turned the night-heavy frames into day.
@@ -267,9 +267,9 @@ def _import_sub(name):
 
     Inside the packaged extension these are real siblings of core/, so a
     relative import works. In the working tree they are still flat top-level
-    files loaded by path. Path loaders cannot be used inside an extension --
+    files loaded by path. Path loaders cannot be used inside an extension:
     the package is bl_ext.<repo>.<id> and sys.modules["plnt_tech"] would
-    collide globally -- so the relative import is tried first.
+    collide globally, so the relative import is tried first.
     """
     import importlib
     import os
@@ -378,7 +378,7 @@ def build_scene_scaffold(preset="earthlike", seed=2291, radius=RADIUS,
                                     os.path.join(directory, "core"))
         except Exception as ex:
             raise RuntimeError(
-                "core/gen_groups.py is missing -- regenerate it with "
+                "core/gen_groups.py is missing; regenerate it with "
                 "tools/dump_tree.py --group PLNT_GlobeRig. Without it the "
                 "globe rig cannot be built from source. (%s)" % ex)
     globe_rig = gen_groups.build_globerig()
@@ -463,7 +463,7 @@ def build_scene_scaffold(preset="earthlike", seed=2291, radius=RADIUS,
 
     # Megastructures. Until v3 this object was only ever created by
     # tools/apply_v2.py, so a planet built through Create Planet System had no
-    # mirror belt, no ringworld arcs and no Dyson swarm -- the Megastructures
+    # mirror belt, no ringworld arcs and no Dyson swarm. The Megastructures
     # panel simply reported "No megastructures in this scene" forever.
     try:
         from . import mega as _mg

@@ -58,7 +58,7 @@ function Invoke-Check {
     if ($BlendFile) { $sp.Blend = $BlendFile } else { $sp.FactoryStartup = $true }
     $r = Invoke-Blender @sp
 
-    # Keep the raw output on disk exactly as the bash version did -- when a
+    # Keep the raw output on disk exactly as the bash version did, because when a
     # check fails, the JSON alone rarely says why.
     Set-Content -LiteralPath (Join-Path $logs "check_$Label.txt") -Value $r.Output -Encoding utf8
 

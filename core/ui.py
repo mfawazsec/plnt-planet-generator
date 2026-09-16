@@ -2,7 +2,7 @@
 
 The panels enumerate node group interfaces and consult core.params only for
 grouping, ordering, tier and help text. Nothing is hand-listed, so a socket
-added later cannot become unreachable -- which is how every ring parameter, all
+added later cannot become unreachable, which is how every ring parameter, all
 eight patch parameters and the whole sun/starfield setup ended up with no UI at
 all in the first version.
 
@@ -112,8 +112,8 @@ def visible_sockets(panel_id, tier, search):
 def mod_slot(holder, ident):
     """The drawable struct behind one Geometry Nodes modifier input.
 
-    Blender 5.x stores a modifier input as an ID property GROUP per socket --
-    {value, type, attribute_name} -- reached through `md.properties.inputs`.
+    Blender 5.x stores a modifier input as an ID property GROUP per socket,
+    {value, type, attribute_name}, reached through `md.properties.inputs`.
     Drawing `inputs['["Socket_4"]']` therefore draws the group itself, and the
     panel reads "ID Property Group" with no usable widget: every rig slider in
     this add-on was dead on 5.2 for exactly that reason. `path_resolve` hands
@@ -147,7 +147,7 @@ _UI_NUMERIC = {"NodeSocketFloat", "NodeSocketFloatFactor", "NodeSocketFloatDista
 def apply_socket_ui(report=False):
     """Push each node group interface's range, default and tooltip onto the
     matching modifier slot. Cheap, idempotent, and only needs running when the
-    rigs are rebuilt -- the values are saved in the .blend."""
+    rigs are rebuilt; the values are saved in the .blend."""
     done_n = 0
     notes = []
     for panel_id, srcs in SOURCES.items():
@@ -198,7 +198,7 @@ def tag_update(*objects):
     """Tag objects so Geometry Nodes actually re-evaluates.
 
     Writing a value through `mod.properties.inputs[...]["value"]` does not mark
-    the depsgraph dirty -- Blender keeps handing back the previous evaluation.
+    the depsgraph dirty, so Blender keeps handing back the previous evaluation.
     Dragging a slider in a panel tags it for you; an operator writing the same
     value does not, so every operator here has to tag explicitly or the change
     silently does nothing on screen.
@@ -262,7 +262,7 @@ def sync_shared_terrain():
 # --------------------------------------------------------------------------
 # Preset table lookup. During the transition the presets still live in a text
 # datablock inside the .blend; once packaged they are a real module. Try the
-# module first, fall back to the text, and cache either way -- exec on every
+# module first, fall back to the text, and cache either way: exec on every
 # redraw would make the panel unusable.
 # --------------------------------------------------------------------------
 _NS_CACHE = {}
@@ -1315,7 +1315,7 @@ class PLNT_OT_remove_system(_Base):
 
     def execute(self, context):
         # core.scene.remove_system also clears lights, cameras and the world,
-        # which this copy did not -- so "Remove" used to leave the sun rig,
+        # which this copy did not, so "Remove" used to leave the sun rig,
         # both cameras and the starfield behind and Create rebuilt on top.
         try:
             from . import scene as _sc
@@ -1337,7 +1337,7 @@ def _on_depsgraph(scene, depsgraph):
     """Keep the terrain values the globe rig and the shaders share in step.
 
     Without this, dragging Continent Scale moves the geometry while the
-    coastline stays where it was -- the two evaluate the same field from
+    coastline stays where it was, because the two evaluate the same field from
     separate copies of the parameters.
     """
     if _depsgraph_guard["busy"]:
@@ -1390,7 +1390,7 @@ def audit():
     """Usability acceptance check: no orphaned sockets, no missing tooltips.
 
     Returns {"scene": False} when there is no planet to inspect, rather than
-    reporting every socket as an orphan -- an empty scene is not a UI defect.
+    reporting every socket as an orphan: an empty scene is not a UI defect.
     """
     if not bpy.data.objects.get(GLOBE):
         return {"scene": False, "reachable": 0, "orphans": [], "undocumented": []}

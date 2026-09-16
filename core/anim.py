@@ -1,7 +1,7 @@
 """One clock for the whole system.
 
 Nothing in this project moved. Not the planet, not the weather, not a single
-satellite, and the megastructures least of all -- a Dyson swarm that hangs
+satellite, and the megastructures least of all. A Dyson swarm that hangs
 motionless is the one thing about it that reads as fake. This module gives
 every moving part its real period and drives all of them from one number.
 
@@ -9,7 +9,7 @@ The number
 ----------
 `scene.plnt.time_scale` is WORLD HOURS PER SECOND OF FOOTAGE. At 1.0 a
 24-hour planet turns once every 24 seconds of playback and a low satellite
-goes round in about 90 -- fast enough to read, slow enough to be legible. At
+goes round in about 90, fast enough to read and slow enough to be legible. At
 1/3600 everything runs at real time. At 0 the system is frozen, which is what
 the ten hero stills want.
 
@@ -20,7 +20,7 @@ which is correct and is also the more interesting picture.
 
 Scale
 -----
-1 Blender unit = 6 km, so radius 1000 is a 6000 km planet -- the value the
+1 Blender unit = 6 km, so radius 1000 is a 6000 km planet, the value the
 ground patch rig already assumes through Planet Radius KM. A circular orbit
 just above such a planet has a period of
 
@@ -182,7 +182,7 @@ def tree_time(tree, loc=(-3200, 1200), scene=None):
 
     Geometry nodes have a Scene Time node; shaders do not, and a Scene Time
     node created in a shader tree is accepted by the API and then evaluates to
-    nothing -- which is how the ring differential rotation was built, saved and
+    nothing, which is how the ring differential rotation was built, saved and
     reported as present while standing perfectly still. Dispatching on the tree
     type is the only way this stays correct as helpers get reused.
     """

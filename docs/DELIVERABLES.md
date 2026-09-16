@@ -1,9 +1,9 @@
-# PLNT v3 -- where everything is
+# PLNT v3: where everything is
 
 > **From the original working tree.** Kept as the command map between the
 > Linux/Flatpak shell tooling and the PowerShell ports. The render harness,
 > ablation scripts, `logs/`, `renders*/` and the demo `.blend` it refers to
-> are not part of this repository -- see the
+> are not part of this repository. See the
 > [repository README](../README.md) for what is.
 
 ## Use it
@@ -30,7 +30,7 @@ Preview 1920×1080/192, Final 2560×1440/512, Archive 2048 with full dicing.
 
 **Performance** is what the machine can afford: Low for laptops and 4 GB cards,
 Balanced for the 6 GB card this was built on, High for 8 GB and up. They are
-independent -- a laptop can render Final quality at Low performance.
+independent: a laptop can render Final quality at Low performance.
 
 ## The clock
 
@@ -46,7 +46,7 @@ directly, or pass `--time-scale` to `tools\anim_check.py`.
 
 ## Windows notes
 
-The `.sh` tooling is Linux/Flatpak only -- absolute `/home/...` paths and
+The `.sh` tooling is Linux/Flatpak only, with absolute `/home/...` paths and
 `flatpak run`. The PowerShell ports take the same arguments as parameters.
 
 | What | Where |
@@ -106,11 +106,11 @@ instead.
 
 ## Known gaps
 
-1. **Cloud shadows** -- a look change, not a saving. `cloudshadow_off` measures
+1. **Cloud shadows.** A look change, not a saving. `cloudshadow_off` measures
    98.2 % of baseline, so the shadow rays are 2 % of render time. The analytic
    refactor is still worth doing for better-defined shadows; the design is in
    `README.md`. Not attempted.
-2. **Cold lava crust** -- the fix is written and queued; confirm in a frame.
+2. **Cold lava crust.** The fix is written and queued; confirm in a frame.
 3. **Atmosphere is brighter** than the volume it replaced. `Intensity` toward
    0.6 recovers v1 contrast at no speed cost.
 4. **Rings are darker** but structurally richer (`Ring Density`,

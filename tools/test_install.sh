@@ -3,7 +3,7 @@
 #
 # test_extension.py proves the package imports and registers; this proves
 # Blender's own installer accepts it and the add-on turns on from a cold profile.
-# Repo root, derived from this script -- never hard-code an absolute path.
+# Repo root, derived from this script. Never hard-code an absolute path.
 B="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # Newest built zip, not a pinned version: pinning the name is how the
 # shipped package stayed at 2.0.0 while the sources moved on.

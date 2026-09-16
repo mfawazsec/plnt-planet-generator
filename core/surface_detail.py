@@ -310,7 +310,7 @@ def rock_strata(tree, B, S, P, FIELD):
     """Sedimentary banding that follows lines of constant elevation.
 
     Isotropic noise on rock reads as dirt. Real exposed rock shows bedding
-    planes -- layers laid down horizontally, then folded. Driving the bands off
+    planes: layers laid down horizontally, then folded. Driving the bands off
     elevation rather than off a 3D noise is what makes them read as strata, and
     modulating the micro-relief with the same signal makes hard and soft layers
     erode differently.
@@ -401,7 +401,7 @@ def vegetation_clumping(tree, B, S, P):
     # Voronoi Color is an unconstrained random RGB per cell, so multiplying by
     # it directly swings the hue wildly and the continents come out patched in
     # pink and olive. Pull it most of the way to white first, so cells vary in
-    # tone rather than in hue -- which is what real vegetation does.
+    # tone rather than in hue, which is what real vegetation does.
     tame = B.mix("veg cell tone")
     tame.inputs[6].default_value = (1.0, 1.0, 1.0, 1.0)
     tame.inputs[0].default_value = 0.38
@@ -492,7 +492,7 @@ def lava_crust(tree, B, S, P, FIELD):
     On a volcanic world the sub-sea-level surface is a magma sea, but it is
     still shaded by the OCEAN branch, whose colour is near-black. The earlier
     fix for flat salmon oceans worked by making most of that area emit almost
-    nothing so the hot cores survive AgX -- correct, but it left the cold crust
+    nothing so the hot cores survive AgX. Correct, but it left the cold crust
     with no relief, no tonal variation and a hard coastline edge, so it reads
     as a hole rather than as basalt.
 

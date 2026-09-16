@@ -4,7 +4,7 @@ is presented.
 Why this exists
 ---------------
 The old panels hand-listed socket names (GLOBE_PARAMS, LOOK_PARAMS, TECH_PARAMS).
-Anything not on a list was simply unreachable -- which is how every ring
+Anything not on a list was simply unreachable, which is how every ring
 parameter, all eight patch parameters, the orbital structural parameters and the
 sun/starfield settings ended up with no UI at all. The UI now enumerates node
 group interfaces directly and consults this table only for grouping, ordering,
@@ -17,7 +17,7 @@ means atmospheric density on the atmosphere and ring opacity on the rings.
 
 TIERS
   BASIC     the handful of controls that change the planet's identity
-  ADVANCED  everything else -- shown when the user asks for it
+  ADVANCED  everything else, shown when the user asks for it
 """
 
 PANELS = [
@@ -80,7 +80,7 @@ def _add(owner, rows):
 
 
 # --------------------------------------------------------------------------
-# Terrain -- shared by the globe rig, the surface shader and the ground patch.
+# Terrain: shared by the globe rig, the surface shader and the ground patch.
 # --------------------------------------------------------------------------
 _TERRAIN = [
     ("Seed", "terrain", 10, 'BASIC',
@@ -143,7 +143,7 @@ _add("surface", [
     ("Rock Hue", "surface", 30, 'BASIC',
      "Base colour of exposed rock, used on steep slopes and barren ground"),
     ("Sand Hue", "surface", 40, 'BASIC',
-     "Colour of arid lowland ground -- desert, dust and dry plains"),
+     "Colour of arid lowland ground: desert, dust and dry plains"),
     ("Slope Rock Threshold", "surface", 50, 'ADVANCED',
      "Steepness at which ground stops being soil and becomes bare rock. Lower "
      "values expose rock on gentler slopes, which reads as a younger, "
@@ -223,7 +223,7 @@ _add("surface", [
      "gives continuous urban sprawl along the habitable belts"),
     ("Night Light Intensity", "civ", 30, 'BASIC',
      "Brightness of city lights on the unlit side. These are area-limited, not "
-     "brightness-limited -- if they are hard to see, raise Urban Density rather "
+     "brightness-limited. If they are hard to see, raise Urban Density rather "
      "than pushing this higher"),
     ("Light Colour Temp", "civ", 40, 'ADVANCED',
      "Colour of the night lights, from warm sodium (an early industrial world) "
@@ -272,7 +272,7 @@ _add("cloud", [
 ])
 _add("atmo", [
     ("Density", "atmo", 10, 'BASIC',
-     "Thickness of the atmosphere. This drives the bright limb halo -- the "
+     "Thickness of the atmosphere. This drives the bright limb halo, the "
      "single strongest cue that the planet has air"),
     ("Atmo Colour", "atmo", 20, 'BASIC',
      "Colour of atmospheric scattering. Blue for an Earth-like nitrogen-oxygen "
@@ -284,7 +284,7 @@ _add("atmo", [
      "Directional bias of scattering. Positive values scatter light forward, "
      "so the atmosphere flares brightly when the planet is backlit"),
     ("Pollution", "atmo", 50, 'ADVANCED',
-     "Industrial haze mixed into the atmosphere -- desaturates and warms it. "
+     "Industrial haze mixed into the atmosphere. Desaturates and warms it. "
      "Pairs with a high Tech Level"),
     ("Inner Radius", "atmo", 60, 'ADVANCED',
      "Altitude at which the atmosphere begins. Should sit at the planet "
@@ -312,7 +312,7 @@ _add("ring", [
      "Overall opacity of the ring material. Low values give a faint dust ring, "
      "high values a solid bright band"),
     ("Ring Colour", "rings", 40, 'BASIC',
-     "Tint of the ring particles -- clean ice, or dirty ice reddened by rock "
+     "Tint of the ring particles: clean ice, or dirty ice reddened by rock "
      "and organics"),
     ("Band Scale", "rings", 50, 'ADVANCED',
      "Number of distinct ringlets across the system. Real ring systems have "
@@ -345,7 +345,7 @@ _add("ring", [
      "How tightly the density waves wind. High values give many tight turns "
      "across the ring; low values give lazy open spirals"),
     ("Wake Strength", "rings", 110, 'ADVANCED',
-     "Strength of the wake a shepherd moon carves at a gap edge -- the "
+     "Strength of the wake a shepherd moon carves at a gap edge, the "
      "propeller-shaped disturbance Cassini photographed at the Encke gap"),
     ("Wake Count", "rings", 112, 'ADVANCED',
      "Number of wake ripples around the circumference"),
@@ -492,7 +492,7 @@ _add("mega", [
 ])
 
 # --------------------------------------------------------------------------
-# Ground patch -- a square of terrain rendered at ground level
+# Ground patch: a square of terrain rendered at ground level
 # --------------------------------------------------------------------------
 _add("patch", [
     ("Patch Latitude", "patch", 10, 'BASIC',
@@ -504,7 +504,7 @@ _add("patch", [
      "landforms; large ones show whole ranges"),
     ("Patch Resolution", "patch", 40, 'ADVANCED',
      "Grid subdivision of the patch. This is the single most expensive setting "
-     "in the file -- it is what makes the patch evaluate to millions of "
+     "in the file: it is what makes the patch evaluate to millions of "
      "triangles"),
     ("Planet Radius KM", "patch", 50, 'ADVANCED',
      "Real planet radius in kilometres, used to convert the patch position and "
@@ -595,7 +595,7 @@ NEVER_SHOW = {"Geometry", "Position", "Instance", "Selection"}
 # These set the SIZE and TOPOLOGY of the system rather than its look, and their
 # interface ranges are legal-range rather than artistic-range: Radius is
 # 1..100000, so a midpoint roll gave a planet of radius ~50000 sitting inside
-# a 1060-unit atmosphere -- the planet vanished and the panel looked broken.
+# a 1060-unit atmosphere: the planet vanished and the panel looked broken.
 # Seeds are excluded for a different reason: they are driven by the one master
 # Seed field, and rolling them per panel desynchronises the geometry from the
 # shading.
@@ -642,7 +642,7 @@ def is_internal(group_name):
 def lookup(owner, socket_name):
     """(panel, order, tier, description) for a socket, always resolving.
 
-    An unknown socket is not dropped -- it lands in the owner's panel under
+    An unknown socket is not dropped; it lands in the owner's panel under
     ADVANCED, so a socket added later can never become unreachable.
     """
     hit = SPEC.get((owner, socket_name))

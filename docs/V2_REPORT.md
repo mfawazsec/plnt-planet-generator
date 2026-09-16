@@ -1,4 +1,4 @@
-# PLNT v2 -- what changed, and how it was verified
+# PLNT v2: what changed, and how it was verified
 
 ## The short version
 
@@ -25,17 +25,17 @@ somewhere none of the planning predicted.
 | **Atmosphere volume** | **54%** | paired, thermally gated |
 | Clouds | 30% | paired, thermally gated |
 | Whole 193-node surface shader | 9% | paired, thermally gated |
-| Displacement (bump + true) | ~16% | unpaired -- indicative only |
-| Adaptive subdivision | ~2% | unpaired -- inside the noise band |
+| Displacement (bump + true) | ~16% | unpaired, indicative only |
+| Adaptive subdivision | ~2% | unpaired, inside the noise band |
 
 The displacement and subdivision figures come from the first, unpaired matrix,
 which GPU thermal throttling later invalidated for effects under about 6%. They
-are directionally right -- neither is the bottleneck -- but the exact
+are directionally right (neither is the bottleneck), but the exact
 percentages should not be quoted. The atmosphere, cloud and shader figures are
 from the paired runs and are solid.
 
 The ray-marched atmosphere cost more than the surface shader, displacement and
-subdivision combined -- Cycles was stepping up to 1024 times through a uniform
+subdivision combined. Cycles was stepping up to 1024 times through a uniform
 spherical shell for every camera ray and every shadow ray.
 
 ### The fix
@@ -44,7 +44,7 @@ spherical shell for every camera ray and every shadow ray.
 through a spherical shell is a chord: with `b = |P x d|` the ray's impact
 parameter and `t = sqrt(R^2 - b^2)` the half-chord, a ray that misses the planet
 crosses `2*(t_outer - t_inner)` of air and one that hits it gets only the near
-part. That is exactly why the limb glows -- grazing rays travel much further
+part. That is exactly why the limb glows: grazing rays travel much further
 through air. 62 nodes, evaluated once per hit, no stepping, no volume.
 
 Measured at **28.5% of baseline** in a paired A/B.
@@ -69,26 +69,26 @@ changes in the README.
 
 Twice as fast overall. `detail` is the high-frequency energy ratio v2/v1: three
 shots hold within 1%, and shot 06 carries 81% more, which is the dune fields
-and strata. The gain is shot-dependent -- it tracks how much atmosphere is in
-frame -- so quote the range, not a single figure. Shot 03's 0.90 is the one
+and strata. The gain is shot-dependent, tracking how much atmosphere is in
+frame, so quote the range rather than a single figure. Shot 03's 0.90 is the one
 figure worth flagging: about 10% less high-frequency energy, most likely the
 analytic atmosphere softening the disc relative to the volume.
 
 ## 2. Detail
 
-- **Rings** -- a real 196k-vertex polar annulus replacing a two-vertex quad.
+- **Rings.** A real 196k-vertex polar annulus replacing a two-vertex quad.
   Named divisions (Cassini, Encke, Keeler, Maxwell, Huygens) that stay put
   across seeds, spiral density waves at integer arm counts, azimuthal clumping
   sampled in Cartesian space so there is no wrap seam, shepherd-moon wakes, and
   Henyey-Greenstein forward scattering. 153-node shader, 23 parameters.
-- **Orbital** -- a twelve-module instanced library. 2,621 instances from 6,240
+- **Orbital.** A twelve-module instanced library. 2,621 instances from 6,240
   unique triangles at level 10, with Realize Instances removed entirely. Truss
   bay count is derived from circumference so braces meet exactly. The greebles
   now take the curve's rotation, which is what turned dashed ribbons into
   structures.
-- **Megastructures** -- mirror belts, partial ringworld arcs with lit inner
+- **Megastructures.** Mirror belts, partial ringworld arcs with lit inner
   faces, and a Dyson swarm, on their own object.
-- **Surface** -- ocean glint variation, coastal foam, dune fields, rock strata,
+- **Surface.** Ocean glint variation, coastal foam, dune fields, rock strata,
   ice cracks, vegetation clumping, impact craters. Each gated by an input that
   Cycles folds away at zero, so unused features are free.
 
@@ -112,10 +112,10 @@ and v2 frames of shot 02 is **0.9908**.
 
 Two conclusions were reported and then retracted:
 
-- **"93% saving"** -- from a mutation that rendered a degenerate frame (mean
+- **"93% saving"** came from a mutation that rendered a degenerate frame (mean
   luminance 30.1 against 50.5 everywhere else). Every ablation cell now records
   the output image's statistics.
-- **"The clouds vanished"** -- the planet had inflated to radius 1034 and
+- **"The clouds vanished"** because the planet had inflated to radius 1034 and
   swallowed its own cloud deck (1004) and atmosphere (1030), because rebuilding
   the terrain field orphaned the globe rig's group node. The apply now fails
   outright if the globe reaches the shell radii, and group references are
@@ -130,7 +130,7 @@ measured idle floor.
 
 **Cloud shadows.** The plan called for extracting the cloud coverage into a
 shared field, sampling it where the sun ray pierces the cloud shell, and then
-setting `PLNT_Clouds.visible_shadow = False` -- better shadows *and* faster,
+setting `PLNT_Clouds.visible_shadow = False`, which is better shadows *and* faster,
 because it removes a per-sample transparent shadow ray against a 1004-unit
 sphere. Clouds measured 30% of render time, so this is the largest remaining
 opportunity. It was deferred because the measurement that would size it
@@ -142,7 +142,7 @@ exercises them was wrong: volcanic sets `Crater Amount 0.25` and desert 0.15.
 They render, but cannot be isolated against the lava and dune detail in those
 frames, so their appearance is unverified rather than unexercised.
 
-**Cold lava crust had no texture** -- found by zooming into shot 05. Below sea
+**Cold lava crust had no texture**, found by zooming into shot 05. Below sea
 level a volcanic world is still shaded by the OCEAN branch with a near-black
 colour, so the areas between the glowing fissures were flat, hard-edged and
 featureless. The v1 lava fix made most of the molten sea emit almost nothing so
@@ -160,7 +160,7 @@ conditional and dropped them to 1.0. Shot 07 was killed at 261s with rc=143 --
 SIGTERM, which is what systemd-oomd sends, not the SIGKILL a kernel OOM uses.
 Dicing drives **memory**, not speed. `render_all.sh` now defaults DICE to 2.0,
 and success is checked by the output's modification time rather than its mere
-existence -- a stale frame satisfies existence, which is how a killed shot
+existence, and a stale frame satisfies existence, which is how a killed shot
 reported OK and then scored a detail ratio of exactly 1.000 against v1, because
 it *was* v1.
 

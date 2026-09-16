@@ -1,7 +1,7 @@
 """Shared node-graph helpers.
 
 Socket names are defined at runtime, not in the API reference, and several node
-types carry duplicates -- Map Range has twelve inputs, four named Value;
+types carry duplicates: Map Range has twelve inputs, four named Value;
 ShaderNodeMix has three parallel sets and for RGBA the live sockets are inputs
 0/6/7 and output 2. Guessing a name is how a build silently wires the wrong
 thing and the mistake only shows up in a render hours later. These helpers fail

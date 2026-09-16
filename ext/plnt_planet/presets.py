@@ -1,4 +1,4 @@
-"""PLNT_presets -- preset library, randomiser and N-panel UI.
+"""PLNT_presets: preset library, randomiser and N-panel UI.
 
 Lives as a text datablock inside the .blend. Run it once (Text Editor > Run
 Script, or it auto-registers on load if `Register` is ticked) to add the
@@ -330,7 +330,7 @@ ATMO_DEFAULTS = {"Density": 0.0080, "Atmo Colour": (0.22, 0.44, 1.0, 1),
                  "Night Glow": 0.004, "Intensity": 1.0}
 # apply_preset never wrote the megastructure rig at all, so the ringworld,
 # the mirror belt and the Dyson swarm stayed at Mega Scale 0 on every preset
-# including "megastructure" -- shot 10 was built from the orbital rig alone.
+# including "megastructure". Shot 10 was built from the orbital rig alone.
 MEGA_DEFAULTS = {
     "Mega Scale": 0.0, "Mirror Orbit": 1.9, "Mirror Count": 90,
     "Mirror Size": 62.0, "Ring Orbit": 2.7, "Ring Sweep": 130.0,
@@ -507,7 +507,7 @@ def sun(azimuth_deg, elevation_deg=0.0):
     This used to set the pivot only, relying on PLNT_Sun already carrying a
     base rotation of (0, 90, 0). core.scene.set_sun used a different convention
     and wrote the sun object too, so whichever ran last decided what the
-    azimuth meant -- a 90 degree difference that never looked broken and
+    azimuth meant, a 90 degree difference that never looked broken and
     relit every hero shot the first time the scene was rebuilt from the
     builders rather than patched.
     """

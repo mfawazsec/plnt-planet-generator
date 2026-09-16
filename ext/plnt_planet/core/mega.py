@@ -66,8 +66,8 @@ MEGA_IN = [
 def _new_any(g, *idnames):
     """First node type that exists in this build.
 
-    Node identifiers move between releases -- FunctionNodeAlignEulerToVector
-    became FunctionNodeAlignRotationToVector -- and creating a missing type
+    Node identifiers move between releases (FunctionNodeAlignEulerToVector
+    became FunctionNodeAlignRotationToVector), and creating a missing type
     raises at build time rather than failing quietly.
     """
     last = None
@@ -202,7 +202,7 @@ def _mirror_belt(g, S, gate, y=800):
     # Heliostat aim.
     #
     # A solar mirror belt exists to put sunlight somewhere. Facing outward is
-    # the one thing it must never do -- that reflects the sun back into space.
+    # the one thing it must never do: that reflects the sun back into space.
     # A mirror that takes light from the sun and lays it on the planet below
     # bisects the two directions, so its normal is the half vector between
     # "toward the sun" and "toward the planet centre". As the belt orbits, the

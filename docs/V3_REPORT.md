@@ -50,14 +50,14 @@ unpaired numbers are not quoted.
 
 | Mutation | Shot | Ratio | Adopted |
 |---|---|---|---|
-| `disp_geom` -- real displaced geometry, no bump | 02 | **62.4 %** | **yes, the default** |
-| `emis_none` -- city lights stop being sampled as lights | 08 | **70.3 %** | **yes** |
-| `disp_true` -- displacement instead of displacement-plus-bump | 02 | 73.6 % | superseded by `disp_geom` |
-| `detail_60` -- noise octaves × 0.6 | 02 | 92.6 % | Low performance tier only |
-| `emis_front` -- front-face emission sampling | 08 | 96.9 % | no, `emis_none` is better |
-| `adapt_obj_lo` -- object-space dicing, 6-unit edge | 02 | 101.8 % | yes, for memory |
-| `detail_85` -- noise octaves × 0.85 | 02 | 104.6 % | **no** |
-| `adapt_obj` -- object-space dicing, 3-unit edge | 02 | 106.7 % | yes, for memory |
+| `disp_geom`: real displaced geometry, no bump | 02 | **62.4 %** | **yes, the default** |
+| `emis_none`: city lights stop being sampled as lights | 08 | **70.3 %** | **yes** |
+| `disp_true`: displacement instead of displacement-plus-bump | 02 | 73.6 % | superseded by `disp_geom` |
+| `detail_60`: noise octaves × 0.6 | 02 | 92.6 % | Low performance tier only |
+| `emis_front`: front-face emission sampling | 08 | 96.9 % | no, `emis_none` is better |
+| `adapt_obj_lo`: object-space dicing, 6-unit edge | 02 | 101.8 % | yes, for memory |
+| `detail_85`: noise octaves × 0.85 | 02 | 104.6 % | **no** |
+| `adapt_obj`: object-space dicing, 3-unit edge | 02 | 106.7 % | yes, for memory |
 
 Two of these deserve their own sentence.
 
@@ -69,8 +69,8 @@ hero framing, which is why this is the default rather than an option.
 
 **Emission sampling.** Cycles was building light-sampling structures for every
 lit window on an entire hemisphere of cities. At planet scale those windows
-illuminate nothing -- the only surface within reach is the six-thousand-kilometre
-sphere they are standing on -- so they are emission to look at, not lights to
+illuminate nothing: the only surface within reach is the six-thousand-kilometre
+sphere they are standing on, so they are emission to look at, not lights to
 sample from.
 
 **What did not pay.** Octave level-of-detail is close to free at 0.85 and worth
@@ -83,8 +83,8 @@ next section.
 
 ## 3. Low-resource machines
 
-Dicing drives **memory, not speed** -- 2560×1440 costs 2.56 GB of VRAM at
-dicing 1.0 against 1.29 GB at 2.0 -- and camera-relative dicing makes that
+Dicing drives **memory, not speed** (2560×1440 costs 2.56 GB of VRAM at
+dicing 1.0 against 1.29 GB at 2.0), and camera-relative dicing makes that
 memory a function of the framing, so a close-up costs four times what a wide
 shot does. Blender 5.0's object-space adaptive subdivision measures the edge in
 object units instead, which makes micropolygon memory a property of the model.
@@ -107,7 +107,7 @@ and 2.2 seconds of geometry-nodes evaluation per parameter change; level 7 is
 245,760 quads and 0.56 seconds. Low is four times more responsive to drag.
 
 There is also a **7-unit trap worth naming**: `adaptive_object_edge_length` is
-in Blender units, and the first value tried here was 0.045 -- 270 m of planet per
+in Blender units, and the first value tried here was 0.045, or 270 m of planet per
 micropolygon. It ran the card out of memory before the first tile. Sensible
 values on a radius-1000 planet are 3 to 6.
 
@@ -116,7 +116,7 @@ values on a radius-1000 planet are 3 to 6.
 ## 4. The two visual defects
 
 **The blocky night-side "roads" were never roads.** They were the edge set of a
-Voronoi diagram -- feature `DISTANCE_TO_EDGE` -- on a *different, finer* Voronoi
+Voronoi diagram (feature `DISTANCE_TO_EDGE`) on a *different, finer* Voronoi
 than the one that places cities. An edge set draws the boundaries *between*
 territories: closed polygons meeting at three-way knots, running through empty
 land and arriving nowhere. On the night side that reads as a wireframe cast over
@@ -125,7 +125,7 @@ the dark hemisphere, which is exactly what it was.
 A road joins two settlements. Taking F1 and F2 of the *city* Voronoi gives the
 two nearest city sites to a point, and the distance from that point to the
 segment between them is small only along the corridor that joins them. That is
-the Delaunay dual of the same diagram -- the graph of which city neighbours which
+the Delaunay dual of the same diagram, the graph of which city neighbours which
 -- and it produces a network that starts and ends at cities. Both endpoints must
 be settled cells, traffic thins toward the middle of a long haul, and the
 corridor wanders slightly using the sprawl noise that was already being
@@ -139,7 +139,7 @@ tangentially, so that point sits far around the curve from the air the ray
 actually travels through, and two adjacent pixels sample sun angles tens of
 degrees apart. The terminator smoothstep turned that into a one-pixel step in
 brightness. Illumination is now evaluated at the ray's closest-approach point
-`C = P − (P·d)d`, which is the deepest and densest point of the chord and varies
+`C = P - (P·d)d`, which is the deepest and densest point of the chord and varies
 smoothly across the limb.
 
 On the *dark* limb, the cloud deck is a zero-thickness shell at full opacity
@@ -178,13 +178,13 @@ does cross two faces.
   colour and Foam added white on top, with nothing bounding the sum; the boost
   is now capped at 1.2.
 - **The planetary grid reads as engineering.** The arcs were 0.0011 of a unit
-  sphere -- about 7 km, thinner than a pixel at every hero framing -- so they
+  sphere (about 7 km, thinner than a pixel at every hero framing), so they
   aliased into dashes. Now 0.004 with a smoothstep edge, twice the glow, and
   gated to Tech 8 and up instead of fading in from Tech 5.5 as a faint scratch.
 - **Orbital hardware stopped reading as a chain of white beads.** The hull was
   one near-black metal at roughness 0.30, which returns almost nothing except
-  the sun. It is now four material classes chosen per instance -- insulation
-  blanket, gold thermal foil, bare panel, radiator -- with streaking in the
+  the sun. It is now four material classes chosen per instance (insulation
+  blanket, gold thermal foil, bare panel, radiator) with streaking in the
   instance's own texture space, plus a greeble pass and solar wings in the
   module library. The greebles are scattered over the twelve *library* modules,
   so they cost a few thousand unique triangles once and are free on every
@@ -206,7 +206,7 @@ footage**. Frozen (0) is the default, because a hero still is a frozen frame of
 a moving system and every shot must match frame to frame. Timelapse (1) turns a
 24-hour planet once every 24 seconds and takes a low satellite round in about 90.
 
-Scale: 1 Blender unit is 6 km, so radius 1000 is a 6000 km planet -- the value
+Scale: 1 Blender unit is 6 km, so radius 1000 is a 6000 km planet, the value
 the ground patch rig already assumed. A circular orbit just above such a planet
 has a period of 84.5 minutes, and Kepler's third law gives every other altitude
 `T(r) = T₀ (r/R)^1.5`.
@@ -245,7 +245,7 @@ number, so shading and geometry cannot disagree about what time it is.
 
 **The drivers read scene ID properties, not `scene.plnt`.** The batch renderer
 loads the .blend with no add-on registered at all. A driver whose data path
-cannot resolve does not raise -- it silently stops updating -- so the entire
+cannot resolve does not raise (it silently stops updating), so the entire
 system would have frozen in every headless render while working perfectly in the
 GUI. `plnt_time_scale`, `plnt_day_length_h` and `plnt_beacon_rate` are custom
 properties on the Scene and resolve whether anything is registered or not.
@@ -253,42 +253,42 @@ properties on the Scene and resolve whether anything is registered or not.
 
 **Per element.**
 
-- *Planet* -- object Z rotation, `360° t / Day Length`.
-- *Clouds* -- the same, plus 1.5°/h of zonal drift (a 50 m/s jet on a 38 000 km
+- *Planet*: object Z rotation, `360° t / Day Length`.
+- *Clouds*: the same, plus 1.5°/h of zonal drift (a 50 m/s jet on a 38 000 km
   circumference), plus weather evolution: all three cloud noises are 4D, and
   advancing the fourth coordinate by 0.02 per world hour turns the pattern over
   in about a week, which is what a satellite loop looks like.
-- *Satellites* -- each gets a great circle of its own. The random orbit axis is
+- *Satellites*: each gets a great circle of its own. The random orbit axis is
   projected perpendicular to the position first, because rotating about an
   arbitrary axis keeps the radius but traces a small circle whose plane misses
   the planet centre. Modules fly nose-first with one face toward the planet.
-- *Orbital bands* -- `Band Motion` picks between three defensible physical
+- *Orbital bands*: `Band Motion` picks between three defensible physical
   readings: Orbiting (free fall at the Kepler rate), Locked to the surface (the
   active-support ring of the fiction), or Inertial (fixed against the stars). The
   spin is applied in the band's canonical frame and the tilt afterwards;
   folding it into the tilt as a Z euler would make the band wobble like a
   dropped coin.
-- *Space elevator* -- no choice: it turns with the planet or it tears out of the
+- *Space elevator*: no choice, it turns with the planet or it tears out of the
   ground. Climbers run at 200 km/h, about two and a half world days from anchor
   to counterweight, and wrap rather than pile up at the top.
-- *Beacons* -- `PLNT_OrbitalLight` strobes at 1 Hz of **footage**, not of world
+- *Beacons*: `PLNT_OrbitalLight` strobes at 1 Hz of **footage**, not of world
   time. At Timelapse a world hour passes per second, so a world-time strobe
   would run at 3600 Hz and render as a constant dim glow.
-- *Rings* -- the sampling angle is rotated by −ω(r)·t, which shears everything
+- *Rings*: the sampling angle is rotated by -ω(r)·t, which shears everything
   that is a function of angle (clumps, spiral density waves, shepherd wakes)
-  while leaving everything that is a function of radius -- every named division --
+  while leaving everything that is a function of radius (every named division)
   exactly where it is.
-- *Mirror belt* -- orbits at 98°/h, and every mirror is a heliostat: its normal
+- *Mirror belt*: orbits at 98°/h, and every mirror is a heliostat: its normal
   is the half vector between the direction to the sun and the direction to the
   planet. Facing outward, which is what it used to do, reflects sunlight back
   into space. As the belt orbits the array re-aims and the specular flare sweeps
   along it.
-- *Ringworld arcs* -- `Arc Motion`, same three readings as the bands.
-- *Dyson swarm* -- each collector on its own orbit like the satellites, eleven
+- *Ringworld arcs*: `Arc Motion`, same three readings as the bands.
+- *Dyson swarm*: each collector on its own orbit like the satellites, eleven
   times further out, facing the sun.
-- *Lava* -- the 4D seed of the crust noises walks at 0.05 per world hour, so the
+- *Lava*: the 4D seed of the crust noises walks at 0.05 per world hour, so the
   plate pattern reorganises over a day.
-- *City lights* -- already gated on sun elevation, so they come on at dusk for
+- *City lights*: already gated on sun elevation, so they come on at dusk for
   free once the planet turns.
 
 Motion blur is off by default: at these speeds it costs real time and the stills
@@ -300,19 +300,19 @@ do not need it.
 
 The quick row is three dropdowns above the eight identity sliders:
 
-- **Quality** -- Draft (1280×720/64), Fast (1920×1080/96), Preview, Final
+- **Quality**: Draft (1280×720/64), Fast (1920×1080/96), Preview, Final
   (2560×1440/512), Archive. A line underneath says roughly what a frame will
   cost and at what resolution, from the measured table, overwritten with this
   machine's own numbers once it has rendered anything.
-- **Performance** -- Low / Balanced / High, as above.
-- **Time Scale** -- with named presets in the Sun & Sky panel.
+- **Performance**: Low / Balanced / High, as above.
+- **Time Scale**: with named presets in the Sun & Sky panel.
 
-The thirteen sub-panels are grouped under four parents -- Planet, Sky,
-Civilisation, Scene -- because thirteen siblings under one header is a wall, and
+The thirteen sub-panels are grouped under four parents (Planet, Sky,
+Civilisation, Scene), because thirteen siblings under one header is a wall, and
 the order they happen to be declared in is not an order anyone reads.
 
 Also: `use_property_split` throughout, short labels in the quick row, a
-"Rendering on CPU -- expect roughly 14× longer" warning when no GPU is found, an
+"Rendering on CPU - expect roughly 14x longer" warning when no GPU is found, an
 Archive-at-6 GB warning, and Save/Load for user presets on disk, in the
 extension's own user directory (the manifest already asked for the `files`
 permission for exactly this).
@@ -324,7 +324,7 @@ permission for exactly this).
 `tools/apply_v3.py` does **not** patch the existing file. v2 replaced node
 groups one at a time and carried a lot of machinery to survive doing so, because
 rebuilding a group removes the datablock and orphans every Group node pointing
-at it -- which is how the globe once inflated to a smooth 1034 units, above its
+at it, which is how the globe once inflated to a smooth 1034 units, above its
 own cloud deck at 1004, while the frame still looked plausible. v3 changes
 almost every builder, so it builds a complete system from scratch on
 `--factory-startup` and saves that. It is the same code path `test_scaffold.py`
@@ -373,7 +373,7 @@ carries a SUNVEC node.
 **The sky was the brightest light in the scene.** The nebula in
 `core.scene.build_world` is a full-sphere emitter at strength 0.25. Measured on
 shot 05 with the planet replaced by flat grey: the sun alone gives 0.035, the
-starfield adds nothing measurable, and the nebula took it to 0.262 -- seven
+starfield adds nothing measurable, and the nebula took it to 0.262, seven
 times the sun. Every night side in the set was lit by the sky rather than by
 anything in the scene, and the volcanic frame, whose whole subject is lava being
 the only light, came back as a pale sphere. The shipped .blend did not have this
@@ -401,7 +401,7 @@ directory, and the results list was also called `out`. Being assigned first, the
 list replaced the directory before the render loop ever read it, so
 `plnt_shots.out_dir(out)` was handed a list, fell through to its default, and
 every frame went to `renders/`. `render_all.ps1` caught it correctly and
-reported "Blender exited 0 but wrote no frame" -- the modification-time check
+reported "Blender exited 0 but wrote no frame". That is the modification-time check
 that v2 added after a stale frame once scored a detail ratio of exactly 1.000.
 
 Cost: the full-resolution v2 PNG of shot 01. The 1200-px review JPEG survives and
@@ -450,7 +450,7 @@ first time, because `apply_preset` never wrote it before, and both carry the
 greeble pass and the solar wings. They are rendering more, not rendering worse.
 
 Detail ratios against v2 (`tools/compare.py`) sit between 0.63 and 1.22, with
-shot 06 at 0.40 -- which is the speckle being gone, not detail being lost -- and
+shot 06 at 0.40 (which is the speckle being gone, not detail being lost), and
 shot 03 at 0.63, the ring darkening the v2 report already documented. Mean
 brightness per frame is within 20% of v2 on eight of the nine comparable shots.
 
@@ -462,8 +462,8 @@ Everything below is from the delivered file, on the delivered zip.
 
 | Check | Result |
 |---|---|
-| `check_all.ps1` | ALL CHECKS PASSED -- 163 sockets reachable, 0 orphans, 0 undocumented, 0 inert, 0 dead nodes |
-| `test_install.ps1` | INSTALL_OK -- 18 panels, 15 operators, scene property present |
+| `check_all.ps1` | ALL CHECKS PASSED: 163 sockets reachable, 0 orphans, 0 undocumented, 0 inert, 0 dead nodes |
+| `test_install.ps1` | INSTALL_OK: 18 panels, 15 operators, scene property present |
 | Drawable sliders | 80 checked, 0 broken |
 | Socket ranges and tooltips written | 80 modifier slots |
 | Mega rig written by presets | Mega Scale 9.5 on the megastructure preset |
@@ -475,11 +475,11 @@ Everything below is from the delivered file, on the delivered zip.
 | Clock reaches nodes | `PLNT_TIME` ×4, `PLNT_TS` ×2, `PLNT_SPIN` ×2 |
 | No driver depends on the add-on | driver paths are `["plnt_time_scale"]`, `["plnt_day_length_h"]`, `["plnt_beacon_rate"]`, `render.fps` |
 | Frozen holds still | globe rotation identical at frames 1 and 120 |
-| Time Scale 1 turns the globe | 1.309 rad at frame 120 -- exactly 5 world hours of a 24-hour day |
+| Time Scale 1 turns the globe | 1.309 rad at frame 120, exactly 5 world hours of a 24-hour day |
 | Motion renders | 48-frame sequences on shots 02, 09, 03 and 10 all move; frame-mean spread 0.0034 to 0.046 |
 | Globe inside its shells | mean radius 1000.6 against a cloud deck at 1004 |
 | Hero batch | 10 of 10, no failures, 30.0 minutes total |
-| Sub-minute tier | Fast quality, wall clock including scene load: shot 02 in 36 s, shot 08 -- the heaviest frame in the set -- in 49 s |
+| Sub-minute tier | Fast quality, wall clock including scene load: shot 02 in 36 s, shot 08 (the heaviest frame in the set) in 49 s |
 | Measured tier times | Draft 17.2 s, Fast 29.7 s per frame, written to `logs/quality_times.json` by the renderer itself and quoted back in the panel |
 
 The last of these is the one the brief asked for by name: the lowest quality tier

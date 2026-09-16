@@ -3,7 +3,7 @@
 Why
 ---
 Measured on shot 02: hiding the atmosphere takes the frame from 93.6 s to
-42.9 s. The volumetric shell is 54% of total render time -- more than the
+42.9 s. The volumetric shell is 54% of total render time, more than the
 surface shader, displacement and subdivision combined. Cycles ray-marches it
 with volume_max_steps up to 1024 on a 1030-unit sphere, for every camera ray
 and every shadow ray.
@@ -23,7 +23,7 @@ Geometry, in the shell's object space with the planet at the origin:
 
 If b < R_planet the ray is blocked by the planet, so only the near half of the
 shell contributes. Otherwise the ray passes through the whole shell and we get
-the full chord -- which is why the limb is bright: grazing rays travel much
+the full chord, which is why the limb is bright: grazing rays travel much
 further through air than rays aimed at the middle of the disc.
 
 Cost: about forty math nodes, evaluated once per hit, with no stepping.
@@ -277,7 +277,7 @@ def _finish_surface(g, C):
     L(sockout(pn, "Vector"), lam.inputs[0]); L(SUN, lam.inputs[1])
     # soft terminator: the day/night edge on air is gradual, not a hard line.
     # Narrower than the original -0.35..0.30 now that the sun angle is sampled
-    # at a point that moves smoothly -- the wide ramp was compensating for a
+    # at a point that moves smoothly. The wide ramp was compensating for a
     # discontinuity that is no longer there, and it washed the terminator out.
     lit = MR((-1840, -1080), -0.20, 0.25, 0.0, 1.0, "lit", 'SMOOTHSTEP')
     L(lam.outputs["Value"], lit.inputs[0])
@@ -328,7 +328,7 @@ def _finish_surface(g, C):
 
     # A camera ray crosses the shell twice, so the full-chord alpha has to be
     # split between the two hits. Gating on Backfacing looked right but depends
-    # on the generated normals pointing outward -- and when they do not, the
+    # on the generated normals pointing outward, and when they do not, the
     # near face is zeroed and the atmosphere disappears entirely, which is
     # exactly what happened on the first render.
     #

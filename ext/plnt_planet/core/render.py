@@ -13,7 +13,7 @@ Values here are chosen against measured behaviour on this project, not copied
 from generic optimisation lists. In particular:
 
   use_guiding            CPU only. Useless on OptiX; left off.
-  use_persistent_data    False for a batch of stills -- one process per shot,
+  use_persistent_data    False for a batch of stills: one process per shot,
                          so it cannot help, and it raises peak RSS, which makes
                          the out-of-memory kills that ended two shots more
                          likely. True for interactive and animation work, where
@@ -235,7 +235,7 @@ def setup_device(scene=None, prefer=('OPTIX', 'CUDA', 'HIP', 'ONEAPI', 'METAL'))
         d.use = (d.type == chosen)
     scene.cycles.device = 'GPU'
     # Preferences are process-local until saved, and headless renders read the
-    # same file -- without this a background render silently drops to CPU.
+    # same file; without this a background render silently drops to CPU.
     try:
         bpy.ops.wm.save_userpref()
     except Exception:

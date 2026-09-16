@@ -1,4 +1,4 @@
-"""Generated node groups. Regenerate with tools/dump_tree.py -- do not hand-edit.
+"""Generated node groups. Regenerate with tools/dump_tree.py; do not hand-edit.
 
 These structures previously existed only inside PLNT_PlanetGen.blend, which
 meant the system could not be rebuilt from source if the file were lost.

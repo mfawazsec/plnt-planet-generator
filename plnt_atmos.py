@@ -140,7 +140,7 @@ def build_clouds(radius=1000.0):
     # Weather evolves. A cloud deck that only rotates is a painted globe with a
     # texture sliding over it: real systems grow, shear and die over a few
     # days. All three noises are 4D, and the fourth coordinate is exactly the
-    # dimension to walk along -- advancing W by 0.02 per world hour turns the
+    # dimension to walk along. Advancing W by 0.02 per world hour turns the
     # pattern over in about a week, which is what a satellite loop looks like.
     ctime = _anim_mod().shader_time(g, (-2600, 900))
     drift = M('MULTIPLY', y=0.02, loc=(-2420, 900), nm="weather drift")
@@ -215,7 +215,7 @@ def build_clouds(radius=1000.0):
     # and the layer would read as a soft band, not a hard edge. With the shell
     # at full opacity right up to the silhouette, its Translucent lobe fires
     # along the whole rim and draws the bright line that appears on the dark
-    # limb -- one of the two "lines on the horizon".
+    # limb, one of the two "lines on the horizon".
     #
     # Fading density out as the surface turns edge-on removes it. |N.I| is 1
     # face-on and 0 exactly at the silhouette.
@@ -234,7 +234,7 @@ def build_clouds(radius=1000.0):
     # Cheap body relief. The deck was a flat painted alpha with no shading of
     # its own, so cloud systems read as stencils rather than as anything with
     # a top. Bumping the same combined field the alpha comes from gives the
-    # tops a lit side for free -- no volume, no second shell.
+    # tops a lit side for free: no volume, no second shell.
     bump = N("ShaderNodeBump"); bump.location = (-160, 60); bump.label = "cloud relief"
     L(s2.outputs["Value"], bump.inputs["Height"])
     L(gi.outputs["Cloud Relief"], bump.inputs["Strength"])

@@ -75,7 +75,7 @@ if ($null -eq $doc) {
 }
 
 $doc | ConvertTo-Json -Depth 10
-# @($null).Count is 1, not 0 -- guard before counting.
+# @($null).Count is 1, not 0, so guard before counting.
 if ($null -eq $doc.panels)    { $panels = 0 } else { $panels = @($doc.panels).Count }
 if ($null -eq $doc.operators) { $ops    = 0 } else { $ops    = @($doc.operators).Count }
 Write-Host ''

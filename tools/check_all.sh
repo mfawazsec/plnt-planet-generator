@@ -7,7 +7,7 @@
 # with no UI, sockets with no tooltip, inputs that cannot reach an output,
 # preset bleed, a broken extension package, and a planet larger than its own
 # atmosphere.
-# Repo root, derived from this script -- never hard-code an absolute path.
+# Repo root, derived from this script. Never hard-code an absolute path.
 B="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # Override for a Flatpak install:
 #   PLNT_BLENDER="flatpak run --command=blender org.blender.Blender"

@@ -1,10 +1,10 @@
-# PLNT -- Procedural Sci-Fi Planet Generator
+# PLNT: a Procedural Sci-Fi Planet Generator
 
 > **Development log.** This is the working record kept while PLNT was built:
 > architecture, the API traps hit along the way, measured costs and the
 > defect log. For installation and usage start at the
-> [repository README](../README.md). Some things referenced here -- `logs/`,
-> `renders*/`, the benchmark harness, the demo `.blend` -- are not part of
+> [repository README](../README.md). Some things referenced here (`logs/`,
+> `renders*/`, the benchmark harness, the demo `.blend`) are not part of
 > this repository.
 
 Blender 5.2.1 LTS · Cycles · OptiX GPU (RTX 2060) · AgX
@@ -43,8 +43,8 @@ system now moves from one Time Scale control.
 | `core/render.py` | Quality presets, performance tiers and device probing. |
 | `core/anim.py` | **One clock for the whole system.** Kepler rates, the drivers, and `sync()`. |
 | `core/nodeutil.py` | Socket resolution that fails loudly instead of guessing. |
-| `plnt_field.py` | Terrain field -- emits geometry **and** shader versions from one source. |
-| `plnt_surface.py` | `PLNT_SurfaceShader` -- per-pixel surface, ocean, displacement. |
+| `plnt_field.py` | Terrain field. Emits geometry **and** shader versions from one source. |
+| `plnt_surface.py` | `PLNT_SurfaceShader`: per-pixel surface, ocean, displacement. |
 | `plnt_tech.py` | Technology layer (cities, roads, grid, agriculture, night lights). |
 | `plnt_atmos.py` | Cloud and atmosphere shells. |
 | `plnt_patch.py` | `PLNT_Patch` ground rig. |
@@ -80,8 +80,8 @@ crosses a closed shell twice, so the full-chord alpha has to be split between
 the two hits. Gating on `Backfacing` looked correct and is orientation
 dependent: when the generated normals do not point the way you assumed, the
 near face is zeroed and the atmosphere disappears completely. Splitting as
-`a_face = 1 - sqrt(1 - a_total)` composes back exactly -- `(1 - a_face)^2 =
-1 - a_total` -- and does not care which face is which. The volume version never
+`a_face = 1 - sqrt(1 - a_total)` composes back exactly, since `(1 - a_face)^2 =
+1 - a_total`, and it does not care which face is which. The volume version never
 had this failure mode because volumes ignore normals.
 
 **Rock strata read as contour lines.** Two mistakes compounding: the tint went
@@ -98,23 +98,23 @@ so they do not all sit on one sphere.
 **The planet swallowed its own atmosphere.** Applying v2 rebuilt
 `PLNT_TerrainField`, which destroys the datablock `PLNT_GlobeRig`'s group node
 points at. Elevation collapsed to a constant 0.5, so the globe inflated from
-~1000 to a perfectly smooth 1034 -- above the cloud deck at 1004 and the
+~1000 to a perfectly smooth 1034, above the cloud deck at 1004 and the
 atmosphere shell at 1030. Both shells were buried inside the planet.
 
 The symptom read as "the clouds and atmosphere disappeared", which sent the
 first two attempts at fixing this into the atmosphere shader, where nothing was
 wrong. The surface *shading* still looked correct throughout, because the
 shader evaluates its own copy of the field per-pixel and never touches the
-geometry rig -- so the frame looked plausible while the terrain was flat.
+geometry rig, so the frame looked plausible while the terrain was flat.
 
 Two guards now exist. Every Group node referencing a PLNT group is recorded
 before a rebuild and re-pointed afterwards, so orphaning a consumer is no
 longer possible. And a radius check fails the apply outright, with the measured
-values, if the globe ever reaches the shell radii -- this class of bug should
+values, if the globe ever reaches the shell radii. This class of bug should
 stop the build rather than produce a convincing wrong picture.
 
 **Relative paths, again.** A chained render used relative paths and silently did
-nothing -- the Flatpak sandbox resolves them against `/app/blender`, so Blender
+nothing, because the Flatpak sandbox resolves them against `/app/blender`, so Blender
 loaded the factory default instead of the project file. This trap is already
 documented in this README and still caught me. Always absolute paths.
 
@@ -138,7 +138,7 @@ better-defined shadows and removes those rays.
 The work is a refactor, not an addition. `build_clouds` computes coverage from
 three warped 4D noises blended by `Band Strength` and thresholded by
 `Cloud Coverage`. That block needs extracting into a shared `PLNT_CloudField`
-group which both the cloud shader and the surface shader consume -- replicating
+group which both the cloud shader and the surface shader consume. Replicating
 the maths separately would let the two drift apart, which is the same class of
 bug that produced the `.001` node group duplicates.
 
@@ -161,13 +161,13 @@ is how the last two regressions in this project happened.
 
 v1 blamed the dicing rate and raised it on shots 04/05/06. Paired measurement
 showed dicing does not affect render time at all, which left the real cause
-open -- until the v2 batch reproduced it.
+open until the v2 batch reproduced it.
 
 Shots 07-10 carry no `dice` value in their shot definitions. v1's
 `render_all.sh` passed `--dice ${DICE:-2.0}` unconditionally, so they rendered
 at 2.0. The v2 rewrite made that conditional, so with `DICE` unset they dropped
 to **1.0**, quadrupling micropolygon memory. Shot 07 was killed at 261s with
-**rc=143** -- SIGTERM, which is what `systemd-oomd` sends under host memory
+**rc=143** is SIGTERM, which is what `systemd-oomd` sends under host memory
 pressure, not the SIGKILL a kernel OOM would use.
 
 So the out-of-memory condition is real, it is driven by dicing, and dicing
@@ -181,14 +181,14 @@ Two guards now:
 - `render_all.sh` defaults `DICE=2.0`, matching what v1 actually used.
 - Success is no longer "the output file exists". A stale frame from a previous
   session satisfies that, which is exactly how a SIGTERM-killed shot reported
-  OK and then produced a detail ratio of exactly 1.000 against v1 -- because it
+  OK and then produced a detail ratio of exactly 1.000 against v1, because it
   *was* v1. The check now compares the output's modification time against the
   shot's start time and names the failure mode.
 
 ## Known defect: cold lava crust has no texture
 
 On the volcanic preset, sub-sea-level regions render as flat, hard-edged
-near-black with no surface detail -- visible in shot 05 as dark blobs with
+near-black with no surface detail, visible in shot 05 as dark blobs with
 coastline-shaped edges between the glowing fissure networks.
 
 The v1 fix for the "flat salmon ocean" problem worked by making most of the
@@ -223,16 +223,16 @@ Where the surface fills the frame, v2 adds detail. Where the atmosphere fills
 it, the extra scattering trades surface contrast for glow.
 
 **The metric is confounded on shots 09 and 10, and probably 08.** Those frames
-now contain far more large, smooth metal -- orbital bands, hubs, satellites,
-megastructures -- and smooth geometry lowers mean Laplacian energy per pixel
+now contain far more large, smooth metal (orbital bands, hubs, satellites,
+megastructures), and smooth geometry lowers mean Laplacian energy per pixel
 even when the scene is unambiguously richer. Shot 09 scores 0.555 while
 visibly carrying more structure than v1. Do not read those as quality
 regressions; the two causes have not been separated. On shot 01 the lit
 side roughly doubled (0.177 -> 0.340) and the night side lifted from near-black
 (0.0065 -> 0.0315).
 
-**This is free to fix.** `Intensity` does not affect render time -- it is the
-same node graph either way -- so lowering it toward ~0.6, with `Night Glow`
+**This is free to fix.** `Intensity` does not affect render time (it is the
+same node graph either way), so lowering it toward ~0.6, with `Night Glow`
 at 0, recovers v1's contrast at no speed cost. Left at 1.0 here because it is
 an aesthetic call on the hero set, not a defect.
 
@@ -244,7 +244,7 @@ an aesthetic call on the hero set, not a defect.
 | rings | 0.664 | 0.084 -> **0.054** |
 
 The planet's softening is the atmosphere doing legitimate aerial perspective.
-The ring number is partly a metric artefact -- v1's rings were dense,
+The ring number is partly a metric artefact: v1's rings were dense,
 near-aliasing grooves, which score high on Laplacian energy, while v2's are
 broader ringlets with real divisions. But the 35% darkening is real, and comes
 from the new per-band composition mixing ice toward dust and rock plus
@@ -309,9 +309,9 @@ Or a single shot directly:
   -- --mode final --shots 1,2,3 --out renders_v3
 ```
 
-Paths **must be absolute**. This started as a Flatpak trap -- the sandbox
+Paths **must be absolute**. This started as a Flatpak trap. The sandbox
 resolved relative paths against `/app/blender` and silently loaded the factory
-default -- and the habit is worth keeping on Windows, where a relative path
+default. The habit is worth keeping on Windows, where a relative path
 resolves against whatever directory the shell happens to be in.
 
 `--time-scale` sets the clock from the command line, with no add-on registered:
@@ -336,7 +336,7 @@ be orphaned.
 - Per-section **Randomise** and **Reset**, so experimenting in one area is
   reversible without disturbing the rest.
 - **Copy / Paste settings** as JSON to share a planet.
-- **Quick Render** (480x270, 32 samples) into the Image Editor -- everything
+- **Quick Render** (480x270, 32 samples) into the Image Editor. Everything
   else is render-only, so this is how a slider gives feedback.
 - Render quality, displacement mode, resolution and output path live in
   **Properties > Render**, where Blender keeps render settings.
@@ -367,11 +367,11 @@ same graph into a `GeometryNodeTree` (for displacement) and a `ShaderNodeTree`
 quantises every coastline to the base mesh; evaluating in the shader does not.
 
 **Residual displacement.** The globe stores `elevation` as an attribute. The
-shader displaces by `(field_elevation − attribute_elevation) × Relief Strength`,
+shader displaces by `(field_elevation - attribute_elevation) × Relief Strength`,
 i.e. exactly the detail the base mesh could not carry, recovered at dice
 resolution. This is what makes close-ups hold up.
 
-**Sun direction.** `matrix_world` is *not* a dependency-tracked driver path -- it
+**Sun direction.** `matrix_world` is *not* a dependency-tracked driver path; it
 silently freezes. Instead `PLNT_SunDir` is an empty parented to the sun at local
 `(0,0,1)`; since the sun sits at the pivot origin its world location *is* the
 sun's Z axis, and `TRANSFORMS`/`WORLD_SPACE` location drivers do track.
@@ -399,7 +399,7 @@ does nothing on screen. This was reached through a level sweep of the orbital
 rig that reported zero geometry at every level while the rig was perfectly fine.
 
 **Random Value sockets are Min=0, Max=1, ID=2, Seed=3**, and they retype
-themselves with `data_type` -- there is not a separate pair of sockets per
+themselves with `data_type`, so there is not a separate pair of sockets per
 type. Indexing 2/3 as Min/Max builds silently and then fails at the first
 integer assignment.
 
@@ -413,11 +413,11 @@ raises with the real socket list rather than letting a wrong guess through.
 - Geometry-node modifier inputs are no longer plain IDProperties:
   `mod.properties.inputs["Socket_N"]["value"]`, keyed by identifier not name.
 - Editing a node group's interface **resets every modifier value** to defaults.
-- `Map Range` and `ShaderNodeMix` have duplicate socket names -- index by integer
+- `Map Range` and `ShaderNodeMix` have duplicate socket names, so index by integer
   (Mix RGBA: in 0/6/7, **out 2**).
 - GN-generated geometry carries no material; it needs a `Set Material` node.
 
-## Performance -- measured, not assumed
+## Performance: measured, not assumed
 
 Every number below comes from `tools/ablate_paired.sh`: each mutation is run
 against its own baseline taken immediately before it, at 1280x720 / 128 fixed
@@ -429,7 +429,7 @@ having cooled to 64C first.
 **Thermal throttling.** An RTX 2060 under sustained load falls from 2100 MHz to
 1500 MHz and reports `SW Thermal Slowdown: Active` at 84C. In the first
 (unpaired) matrix this made cells run later ~6% slower for reasons unrelated to
-the mutation -- three mutations that should have been neutral-or-faster all
+the mutation: three mutations that should have been neutral-or-faster all
 measured +5 to +6%. Any ablation run as a straight sequence on this hardware is
 measuring the cooler, not the code.
 
@@ -449,8 +449,8 @@ fraction so an invalid mutation is caught instead of being reported as a win.
 | Adaptive subdivision | ~2% | disabling the Subsurf modifier | unpaired, in noise |
 
 The last two come from the first matrix, which thermal throttling invalidated
-for effects under about 6%. They are directionally right -- neither is the
-bottleneck -- but do not quote the exact percentages.
+for effects under about 6%. They are directionally right (neither is the
+bottleneck), but do not quote the exact percentages.
 
 The volumetric atmosphere is more expensive than the surface shader,
 displacement and subdivision combined. Cycles ray-marches a uniform spherical
@@ -475,7 +475,7 @@ than costing a lookup. That is what makes the optional detail features in
 
 Same shots, same resolution, same samples, rendered from the pre-v2 backup and
 from the applied scene. `detail` is the high-frequency (Laplacian) energy ratio
-v2/v1 -- the metric that catches detail deleted in the name of speed.
+v2/v1, the metric that catches detail deleted in the name of speed.
 
 | shot | preset | v1 | v2 | speedup | detail |
 |---|---|---|---|---|---|
@@ -497,7 +497,7 @@ one edge and displacement dominates. Quote the range, not a single figure.
 
 **One number worth not burying:** shot 03 sits at 0.90, about 10% less
 high-frequency energy than v1. The rings gained a great deal of structure, so
-the loss is elsewhere -- most likely the analytic atmosphere softening the disc
+the loss is elsewhere, most likely the analytic atmosphere softening the disc
 slightly relative to the volume. Small and plausible, but real, and not
 isolated.
 
@@ -524,7 +524,7 @@ buy nothing: raising the dicing rate to 4.0 measured no faster, and disabling
 adaptive subdivision entirely changed render time by under 2%. They were only
 ever a memory workaround.
 
-Memory pressure is lower in v2 -- the volumetric atmosphere is gone, the
+Memory pressure is lower in v2: the volumetric atmosphere is gone, the
 ground patch no longer evaluates 20.7M triangles in the viewport, and the
 orbital rig no longer realises its instances. So those three shots could very
 likely return to `dice = 1.0` and gain surface detail for free. That has not
@@ -542,7 +542,7 @@ shader. The optical path through a spherical shell is a chord, so it has a
 closed form: with `b = |P x d|` the ray's impact parameter and
 `t = sqrt(R^2 - b^2)` the half-chord, a ray that misses the planet crosses
 `2*(t_outer - t_inner)` of air and one that hits it gets only the near part.
-That is exactly why the limb is bright -- grazing rays travel much further
+That is exactly why the limb is bright: grazing rays travel much further
 through air. 62 nodes, evaluated once per hit, no stepping, no volume.
 
 ---
@@ -569,7 +569,7 @@ replaces it with a closed-form chord through the shell.
 - Megastructures: mirror belts, partial ringworld arcs with lit inner faces,
   and a Dyson swarm, on their own object.
 - Surface: ocean glint variation, coastal foam, dune fields, rock strata, ice
-  cracks, vegetation clumping and impact craters -- each gated by an input that
+  cracks, vegetation clumping and impact craters, each gated by an input that
   Cycles folds away when it is zero.
 
 **Usability.** Panels enumerate node-group interfaces instead of hand-written
@@ -579,7 +579,7 @@ rings, patch, orbital and sun had no UI at all. Basic/Advanced/All tiers,
 search, per-section randomise and reset, copy/paste as JSON, quick render.
 
 **Reproducibility.** `core/scene.py` builds the whole system in an empty scene,
-and `PLNT_GlobeRig` -- which existed only inside the .blend -- is now in source.
+and `PLNT_GlobeRig`, which existed only inside the .blend, is now in source.
 The extension builds and validates with Blender's own tooling.
 
 ### Hero renders: v1 vs v2
@@ -602,7 +602,7 @@ either side.
 | | **total** | **185.1 m** | **57.6 m** | **3.21x** | |
 
 Three hours of render time down to under one. `detail` is the high-frequency
-energy ratio v2/v1 -- see the caveats above: it is confounded on 09 and 10,
+energy ratio v2/v1. See the caveats above: it is confounded on 09 and 10,
 where far more large smooth geometry now fills the frame.
 
 ### Why some shots used dice > 1.0 (v1 reasoning, now superseded)
@@ -619,5 +619,5 @@ never identified. See "What the dicing rates should probably become" above.
 `plnt_check.py` measures subject coverage, frame edges touched, centroid offset
 and emptiest quadrant against the brief's mandatory rules. 9/10 pass outright.
 Shot 07 flags only because a night-side planet falls below the luminance
-threshold, so the detector sees the lit crescent rather than the disc -- the
+threshold, so the detector sees the lit crescent rather than the disc. The
 frame itself has the limb crossing three edges with a diagonal terminator.

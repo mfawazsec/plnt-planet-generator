@@ -13,8 +13,8 @@ What was wrong with the first version
 * Divisions came out of the same noise as the ringlets, so the Cassini
   Division moved whenever the seed changed.
 
-Reference: the structures modelled here -- density waves at resonances,
-shepherd-moon wakes with sharp-edged gaps, and stable named divisions -- are
+Reference: the structures modelled here (density waves at resonances,
+shepherd-moon wakes with sharp-edged gaps, and stable named divisions) are
 the features Cassini resolved in Saturn's rings.
 """
 import bpy
@@ -26,7 +26,7 @@ except ImportError:
 
 # Named divisions, positioned in normalised radius across [Inner, Outer].
 # These are deliberately independent of the noise so ring structure stays put
-# when the seed changes -- a division that wanders is not a division.
+# when the seed changes; a division that wanders is not a division.
 DIVISIONS = (
     ("Maxwell", 0.300, 0.008, 0.70),
     ("Cassini", 0.620, 0.055, 0.95),
@@ -74,7 +74,7 @@ except ImportError:
 def _sunvec(g, loc=(-1800, -900)):
     """Sun direction as a live vector, tracked through PLNT_SunDir.
 
-    matrix_world is not a dependency-tracked driver path -- it silently freezes
+    matrix_world is not a dependency-tracked driver path; it silently freezes
     at whatever it was when the driver was created. PLNT_SunDir is an empty
     parented to the sun at local (0,0,1); since the sun sits at the pivot
     origin its world location IS the sun's Z axis, and TRANSFORMS/WORLD_SPACE
@@ -154,7 +154,7 @@ def build_ring_shader(name="PLNT_RingShader", inner=1350.0, outer=2300.0):
     # each on its own circular orbit, and the inner ones go round faster:
     # Saturn B ring inner edge takes about 7 hours, the outer A ring about 14.
     # Anything drawn on the ring that is a function of ANGLE therefore has to
-    # shear -- clumps, spiral density waves and shepherd wakes all do -- while
+    # shear (clumps, spiral density waves and shepherd wakes all do), while
     # anything that is a function of RADIUS, which is every named division,
     # must stay exactly where it is.
     #
@@ -237,7 +237,7 @@ def _divisions(ctx, g):
 
     Each division is a smoothstep notch on normalised radius. Because they do
     not come from the band noise, the Cassini Division stays where it is when
-    the seed changes -- which is what makes it read as a division rather than
+    the seed changes, which is what makes it read as a division rather than
     as a wide dark ringlet.
     """
     N, L, M, MR, S, NR = ctx["N"], ctx["L"], ctx["M"], ctx["MR"], ctx["S"], ctx["NR"]
@@ -287,7 +287,7 @@ def _azimuthal(ctx, g):
 
     * spiral density waves at orbital resonances. The arm count must be an
       integer or the pattern leaves a hard seam where theta wraps at +/-pi.
-    * azimuthal clumping, sampled on (x, y) rather than on theta -- Cartesian
+    * azimuthal clumping, sampled on (x, y) rather than on theta. Cartesian
       coordinates are continuous across the wrap, so there is no seam to fix.
     * shepherd-moon wakes, localised to the outer ring edge with a Gaussian
       falloff so they read as a disturbance at one radius, not everywhere.
@@ -309,7 +309,7 @@ def _azimuthal(ctx, g):
     wave = M('SUBTRACT', x=1.0, loc=(-220, 1530), clamp=True, nm="wave gain")
     L(swa.outputs[0], wave.inputs[1])
 
-    # clumping on Cartesian coords -- continuous across the theta wrap, and
+    # clumping on Cartesian coords: continuous across the theta wrap, and
     # rotated by the same orbital phase so a clump travels with its own orbit
     # instead of hanging in space while the density waves sweep through it
     rot = ctx["N"]("ShaderNodeVectorRotate")

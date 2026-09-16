@@ -141,7 +141,7 @@ import render as rmod
 try_step("lod.describe", lambda: sorted(lod.describe().keys()))
 try_step("render.presets", lambda: sorted(rmod.PRESETS.keys()))
 
-# UI: registration is the real test -- a bad property or panel fails here
+# UI: registration is the real test, since a bad property or panel fails here
 import ui
 try_step("ui.register", lambda: (ui.register(), "registered")[1])
 try_step("ui.audit", lambda: ui.audit())

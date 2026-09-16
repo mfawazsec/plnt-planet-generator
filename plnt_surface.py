@@ -1,4 +1,4 @@
-"""PLNT_SurfaceShader -- per-pixel surface shading.
+"""PLNT_SurfaceShader: per-pixel surface shading.
 
 Evaluates PLNT_TerrainFieldSH directly in the shader rather than reading
 interpolated vertex attributes, so coastlines/rivers/ice resolve at pixel
@@ -417,7 +417,7 @@ def build_surface(name="PLNT_SurfaceShader", sun_dir_obj=None, pos_attr=None):
 
     # Extra surface detail lives in its own module so this function stays
     # readable. It attaches by node label, and every feature is gated by a new
-    # group input defaulting to 0 -- Cycles constant-folds a constant-zero
+    # group input defaulting to 0. Cycles constant-folds a constant-zero
     # branch away entirely, so unused features cost nothing at render time.
     try:
         from core import surface_detail
@@ -451,9 +451,10 @@ def wire_material(matname="PLNT_Surface", groupname="PLNT_SurfaceShader", displa
     # Measured on shot 8, paired and thermally gated: 47 s against 64 s, a 27%
     # saving, for an image that is not different. Cycles was building light
     # sampling structures for every lit window on a whole hemisphere of
-    # cities. At this scale those windows illuminate nothing -- the surface
-    # they would light is the surface they are on, six thousand kilometres
-    # across -- so they are emission to look at, not lights to sample from.
+    # cities. At this scale those windows illuminate nothing, because the
+    # surface they would light is the surface they are on, six thousand
+    # kilometres across. They are emission to look at, not lights to sample
+    # from.
     try:
         mat.cycles.emission_sampling = 'NONE'
     except Exception:

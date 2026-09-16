@@ -7,7 +7,7 @@ What was wrong with the first version
   ribbon rather than as a structure following the band. This was the single
   most visible defect in shots 09 and 10.
 * Satellites got neither Rotation nor Scale, so all of them were the same
-  axis-aligned box at the same size -- 34 identical cubes.
+  axis-aligned box at the same size: 34 identical cubes.
 * A Realize Instances node at the end flattened everything into real geometry,
   multiplying memory by the instance count for no benefit.
 * Strip lighting came from a world-space Z wave, so the same band of light cut
@@ -306,8 +306,8 @@ def _satellites(g, S, lib, gate, y=1400):
     """A clustered shell of instanced modules.
 
     Points come from a UV sphere, are thinned by a spatial noise rather than by
-    pure chance -- real orbital traffic bunches into planes and altitude shells
-    -- and are pushed to a spread of radii so they do not all sit on one
+    pure chance (real orbital traffic bunches into planes and altitude
+    shells), and are pushed to a spread of radii so they do not all sit on one
     sphere.
     """
     N, L, M, VM = _mathfns(g)
@@ -332,7 +332,7 @@ def _satellites(g, S, lib, gate, y=1400):
     L(sockout(cv, "Vector"), sockin(cn, "Vector"))
     L(S["Seed"], sockin(cn, "W"))
     # FBM Fac clusters tightly around 0.5, so thresholding it directly keeps
-    # almost nothing -- Satellite Density 0.34 gave 24 satellites out of ~2000
+    # almost nothing: Satellite Density 0.34 gave 24 satellites out of ~2000
     # candidate points. Spread the useful part of the distribution across 0..1
     # first, so the density value means what it says.
     spread = N("ShaderNodeMapRange"); spread.location = (-1540, y - 380)
@@ -375,7 +375,7 @@ def _satellites(g, S, lib, gate, y=1400):
     #
     # Each satellite gets a great circle of its own. The orbit plane must pass
     # through the planet centre, so the random axis is projected perpendicular
-    # to the position first -- rotating about an arbitrary axis keeps the
+    # to the position first. Rotating about an arbitrary axis keeps the
     # radius but traces a small circle whose plane misses the centre, which
     # would have every satellite quietly orbiting a point in empty space.
     #
@@ -896,7 +896,7 @@ def build_light_material(name="PLNT_OrbitalLight"):
     at the structural hull, because nothing ever built the material the name
     promised. A hull at metallic 0.85 / roughness 0.30 has no emission at all,
     so every "light" on the orbital infrastructure was in fact a grey panel
-    catching the sun -- which is why the bands read as a chain of white beads
+    catching the sun, which is why the bands read as a chain of white beads
     on the night side, where there is no sun to catch.
     """
     mat = bpy.data.materials.get(name) or bpy.data.materials.new(name)
