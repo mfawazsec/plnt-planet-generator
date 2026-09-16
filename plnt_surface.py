@@ -45,6 +45,14 @@ _D = _os.path.dirname(_os.path.abspath(__file__))
 
 
 def _tech():
+    # inside the packaged extension the module is a sibling named tech.py;
+    # in the flat working tree it is plnt_tech.py next to this file
+    if __package__:
+        import importlib as _il
+        try:
+            return _il.import_module(".tech", __package__)
+        except Exception:
+            pass
     sp = _ilu.spec_from_file_location("plnt_tech", _os.path.join(_D, "plnt_tech.py"))
     m = _ilu.module_from_spec(sp); _sys.modules["plnt_tech"] = m; sp.loader.exec_module(m)
     return m
@@ -63,15 +71,15 @@ LOOK_IN = [
     ("Ice Brightness", 'NodeSocketFloat', 0.80, 0.0, 2.0),
     ("Ocean Shallow", 'NodeSocketColor', (0.045, 0.215, 0.275, 1), None, None),
     ("Ocean Deep", 'NodeSocketColor', (0.0035, 0.014, 0.040, 1), None, None),
-    ("Shelf Boost", 'NodeSocketFloat', 1.10, 0.0, 4.0),
+    ("Shelf Boost", 'NodeSocketFloat', 0.37, 0.0, 4.0),
     ("Slope Rock Threshold", 'NodeSocketFloat', 0.26, 0.0, 1.0),
     ("Vegetation Amount", 'NodeSocketFloat', 1.0, 0.0, 2.0),
     ("Ice Temp Threshold", 'NodeSocketFloat', 0.20, 0.0, 1.0),
     ("River Tint", 'NodeSocketFloat', 0.30, 0.0, 2.0),
     ("Patchiness", 'NodeSocketFloat', 0.35, 0.0, 1.0),
     ("Lava Emission", 'NodeSocketFloat', 0.0, 0.0, 40.0),
-    ("Micro Disp Height", 'NodeSocketFloat', 2.2, 0.0, 200.0),
-    ("Micro Disp Scale", 'NodeSocketFloat', 145.0, 1.0, 6000.0),
+    ("Micro Disp Height", 'NodeSocketFloat', 0.35, 0.0, 200.0),
+    ("Micro Disp Scale", 'NodeSocketFloat', 300.0, 1.0, 6000.0),
 ]
 
 FIELD_DEFAULTS = {
@@ -103,7 +111,7 @@ def build_surface(name="PLNT_SurfaceShader", sun_dir_obj=None, pos_attr=None):
     for p in FIELD_PARAMS:
         dv, mn, mx = FIELD_DEFAULTS[p]
         sk(p, 'INPUT', 'NodeSocketFloat', dv, mn, mx)
-    sk("Relief Strength", 'INPUT', 'NodeSocketFloat', 70.0, 0.0, 400.0)
+    sk("Relief Strength", 'INPUT', 'NodeSocketFloat', 23.0, 0.0, 400.0)
     for n, st, dv, mn, mx in LOOK_IN:
         sk(n, 'INPUT', st, dv, mn, mx)
     TECH = _tech()
@@ -420,8 +428,11 @@ def build_surface(name="PLNT_SurfaceShader", sun_dir_obj=None, pos_attr=None):
     # group input defaulting to 0. Cycles constant-folds a constant-zero
     # branch away entirely, so unused features cost nothing at render time.
     try:
-        from core import surface_detail
+        from .core import surface_detail       # packaged extension
     except ImportError:
+      try:
+        from core import surface_detail
+      except ImportError:
         import importlib.util as _ilu
         _p = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                           "core", "surface_detail.py")

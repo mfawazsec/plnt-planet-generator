@@ -158,7 +158,7 @@ def build_clouds(radius=1000.0):
     # latitude-banded macro flow: squash Z so swirls stretch into bands
     sep = N("ShaderNodeSeparateXYZ"); sep.location = (-1840, -600)
     L(nrm.outputs["Vector"], sep.inputs["Vector"])
-    zst = M('MULTIPLY', y=3.1, loc=(-1660, -700)); L(sep.outputs["Z"], zst.inputs[0])
+    zst = M('MULTIPLY', y=4.2, loc=(-1660, -700)); L(sep.outputs["Z"], zst.inputs[0])
     comb = N("ShaderNodeCombineXYZ"); comb.location = (-1480, -600)
     L(sep.outputs["X"], comb.inputs[0]); L(sep.outputs["Y"], comb.inputs[1])
     L(zst.outputs["Value"], comb.inputs[2])
@@ -169,38 +169,43 @@ def build_clouds(radius=1000.0):
     ws = N("ShaderNodeVectorMath"); ws.operation = 'SUBTRACT'; ws.location = (-1660, -280)
     L(wn.outputs["Color"], ws.inputs[0]); ws.inputs[1].default_value = (0.5, 0.5, 0.5)
     wsc = N("ShaderNodeVectorMath"); wsc.operation = 'SCALE'; wsc.location = (-1480, -280)
-    L(ws.outputs["Vector"], wsc.inputs[0]); wsc.inputs["Scale"].default_value = 0.42
+    L(ws.outputs["Vector"], wsc.inputs[0]); wsc.inputs["Scale"].default_value = 1.15
+    # shear the warp: isotropic displacement makes round blobs, but a real
+    # cloud field is stretched along the zonal flow and compressed across it
+    wsh = N("ShaderNodeVectorMath"); wsh.operation = 'MULTIPLY'; wsh.location = (-1390, -280)
+    L(wsc.outputs["Vector"], wsh.inputs[0]); wsh.inputs[1].default_value = (1.9, 1.9, 0.30)
     Pw = N("ShaderNodeVectorMath"); Pw.operation = 'ADD'; Pw.location = (-1300, -440)
-    L(comb.outputs["Vector"], Pw.inputs[0]); L(wsc.outputs["Vector"], Pw.inputs[1])
+    L(comb.outputs["Vector"], Pw.inputs[0]); L(wsh.outputs["Vector"], Pw.inputs[1])
 
     # band 1: macro swirls (banded coords)
-    b1 = NOISE((-1100, 700), 2.6, 6.0, 0.55, "macro")
+    b1 = NOISE((-1100, 700), 2.6, 7.0, 0.55, "macro")
     L(Pw.outputs["Vector"], b1.inputs["Vector"]); L(w2, b1.inputs["W"])
     # band 2: mid cumulus clumps (unbanded, warped)
     Pw2 = N("ShaderNodeVectorMath"); Pw2.operation = 'ADD'; Pw2.location = (-1300, -100)
-    L(nrm.outputs["Vector"], Pw2.inputs[0]); L(wsc.outputs["Vector"], Pw2.inputs[1])
-    b2 = NOISE((-1100, 460), 9.0, 8.0, 0.6, "cumulus")
+    L(nrm.outputs["Vector"], Pw2.inputs[0]); L(wsh.outputs["Vector"], Pw2.inputs[1])
+    b2 = NOISE((-1100, 460), 6.5, 5.0, 0.6, "cumulus")
     L(Pw2.outputs["Vector"], b2.inputs["Vector"]); L(w3, b2.inputs["W"])
     # band 3: fine wisps
-    b3 = NOISE((-1100, 220), 30.0, 9.0, 0.62, "wisps")
+    b3 = NOISE((-1100, 220), 16.0, 5.0, 0.45, "wisps")
     L(Pw2.outputs["Vector"], b3.inputs["Vector"]); L(w4, b3.inputs["W"])
 
-    for nd, base in ((b1, 2.6), (b2, 9.0), (b3, 30.0)):
+    for nd, base in ((b1, 2.6), (b2, 6.5), (b3, 16.0)):
         sc = M('MULTIPLY', y=base, loc=(nd.location.x - 220, nd.location.y - 160))
         L(gi.outputs["Detail Scale"], sc.inputs[0]); L(sc.outputs["Value"], nd.inputs["Scale"])
 
     # weighted blend; Band Strength biases macro vs detail
     bs_inv = M('SUBTRACT', x=1.0, loc=(-880, 60)); L(gi.outputs["Band Strength"], bs_inv.inputs[1])
     t1 = M('MULTIPLY', loc=(-880, 700)); L(b1.outputs["Factor"], t1.inputs[0]); L(gi.outputs["Band Strength"], t1.inputs[1])
-    t2a = M('MULTIPLY', y=0.62, loc=(-880, 460)); L(b2.outputs["Factor"], t2a.inputs[0])
+    t2a = M('MULTIPLY', y=0.55, loc=(-880, 460)); L(b2.outputs["Factor"], t2a.inputs[0])
     t2 = M('MULTIPLY', loc=(-700, 460)); L(t2a.outputs["Value"], t2.inputs[0]); L(bs_inv.outputs["Value"], t2.inputs[1])
-    t3 = M('MULTIPLY', y=0.22, loc=(-880, 220)); L(b3.outputs["Factor"], t3.inputs[0])
+    t3 = M('MULTIPLY', y=0.05, loc=(-880, 220)); L(b3.outputs["Factor"], t3.inputs[0])
     s1 = M('ADD', loc=(-520, 600)); L(t1.outputs["Value"], s1.inputs[0]); L(t2.outputs["Value"], s1.inputs[1])
     s2 = M('ADD', loc=(-340, 600)); L(s1.outputs["Value"], s2.inputs[0]); L(t3.outputs["Value"], s2.inputs[1])
 
     # coverage threshold: high coverage -> lower cut
     cut = MR((-520, 380), 0.0, 1.0, 0.86, 0.20, "cut"); L(gi.outputs["Cloud Coverage"], cut.inputs[0])
-    cutw = M("ADD", y=0.16, loc=(-340, 380)); L(cut.outputs["Result"], cutw.inputs[0])
+    # a 0.16 wide ramp thresholds the cloud field into hard binary speckle
+    cutw = M("ADD", y=0.50, loc=(-340, 380)); L(cut.outputs["Result"], cutw.inputs[0])
     alpha = MR((-140, 520), None, None, 0.0, 1.0, "alpha")
     L(s2.outputs["Value"], alpha.inputs[0])
     L(cut.outputs["Result"], alpha.inputs[1]); L(cutw.outputs["Value"], alpha.inputs[2])
@@ -276,7 +281,7 @@ def build_atmosphere():
     sk("Atmo Colour", 'INPUT', 'NodeSocketColor', (0.22, 0.44, 1.0, 1))
     sk("Anisotropy", 'INPUT', 'NodeSocketFloat', 0.3, -1.0, 1.0)
     sk("Inner Radius", 'INPUT', 'NodeSocketFloat', 1000.0, 1.0, 1e6)
-    sk("Outer Radius", 'INPUT', 'NodeSocketFloat', 1030.0, 1.0, 1e6)
+    sk("Outer Radius", 'INPUT', 'NodeSocketFloat', 1020.0, 1.0, 1e6)
     sk("Falloff", 'INPUT', 'NodeSocketFloat', 3.2, 0.1, 12.0)
     sk("Pollution", 'INPUT', 'NodeSocketFloat', 0.0, 0.0, 1.0)
     sk("Volume", 'OUTPUT', 'NodeSocketShader')
@@ -329,9 +334,9 @@ def make_cloud_object(radius=1000.0):
     gn.name = "PLNT_CTL"; gn.label = "PLNT_CTL"; gn.location = (0, 0)
     out = nt.nodes.new("ShaderNodeOutputMaterial"); out.location = (300, 0)
     nt.links.new(gn.outputs["BSDF"], out.inputs["Surface"])
-    ob, mod, g = _sphere("PLNT_Clouds", radius * 1.004, 6)
-    _set(mod, "Radius", radius * 1.004)
-    _set(mod, "Subdiv", 6)
+    ob, mod, g = _sphere("PLNT_Clouds", radius * 1.002, 7)
+    _set(mod, "Radius", radius * 1.002)
+    _set(mod, "Subdiv", 7)
     _set(mod, "Material", mat)
     ob.visible_shadow = True
     return ob, mat
@@ -347,10 +352,12 @@ def make_atmo_object(radius=1000.0):
     out = nt.nodes.new("ShaderNodeOutputMaterial"); out.location = (300, 0)
     nt.links.new(gn.outputs["Volume"], out.inputs["Volume"])
     gn.inputs["Inner Radius"].default_value = radius
-    gn.inputs["Outer Radius"].default_value = radius * 1.03
-    ob, mod, g = _sphere("PLNT_Atmosphere", radius * 1.03, 5)
-    _set(mod, "Radius", radius * 1.03)
-    _set(mod, "Subdiv", 5)
+    gn.inputs["Outer Radius"].default_value = radius * 1.02
+    # subdiv 5 is 5120 faces; the rim term is non-linear enough that linear
+    # normal interpolation across triangles that big is visible at the limb
+    ob, mod, g = _sphere("PLNT_Atmosphere", radius * 1.02, 7)
+    _set(mod, "Radius", radius * 1.02)
+    _set(mod, "Subdiv", 7)
     _set(mod, "Material", mat)
     # must not darken the surface it wraps
     ob.visible_shadow = False

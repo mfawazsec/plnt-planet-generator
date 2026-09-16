@@ -48,7 +48,7 @@ ATMO_IN = [
      "so the atmosphere flares when the planet is backlit"),
     ("Inner Radius", 'NodeSocketFloat', 1000.0, 1.0, 1e6,
      "Altitude at which the atmosphere begins; should sit at the surface"),
-    ("Outer Radius", 'NodeSocketFloat', 1030.0, 1.0, 1e6,
+    ("Outer Radius", 'NodeSocketFloat', 1020.0, 1.0, 1e6,
      "Top of the atmosphere. The gap to Inner Radius is the shell depth"),
     ("Falloff", 'NodeSocketFloat', 3.2, 0.1, 20.0,
      "How quickly the air thins with altitude. Sharp falloff gives a tight "
@@ -375,7 +375,8 @@ def make_material(matname="PLNT_Atmosphere", groupname="PLNT_AtmoShader",
     gn.node_tree = bpy.data.node_groups[groupname]
     gn.name = "PLNT_CTL"; gn.label = "PLNT_CTL"; gn.location = (0, 0)
     gn.inputs["Inner Radius"].default_value = radius
-    gn.inputs["Outer Radius"].default_value = radius * 1.03
+    # must match the shell mesh that plnt_atmos.make_atmo_object builds
+    gn.inputs["Outer Radius"].default_value = radius * 1.02
     out = nt.nodes.new("ShaderNodeOutputMaterial"); out.location = (320, 0)
     nt.links.new(gn.outputs["BSDF"], out.inputs["Surface"])
     # nothing is connected to Volume any more: that is the whole point.

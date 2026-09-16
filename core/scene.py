@@ -274,7 +274,8 @@ def _import_sub(name):
     import importlib
     import os
     try:
-        return importlib.import_module("..%s" % name, __name__)
+        parent = (__package__ or __name__).rsplit(".", 1)[0]
+        return importlib.import_module(".%s" % name, parent)
     except Exception:
         directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         return _load_flat(_SUBMODULES.get(name, name), directory)
