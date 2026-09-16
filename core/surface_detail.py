@@ -187,12 +187,12 @@ def ocean_glint(tree, B, S, P):
     comb = B.M('MULTIPLY', label="glint mix")
     B.L(sockout(wind, "Fac"), comb.inputs[0])
     B.L(sockout(slick, "Fac"), comb.inputs[1])
-    # Floor at 0.08. Below about 0.06 a curved water surface under a distant
-    # sun returns the specular highlight as a handful of single bright pixels
-    # that denoising cannot resolve into anything: shot 04 showed the glint as
-    # a hard white dot rather than a sheet of light. 0.08 to 0.14 keeps the
-    # glint as a glint and still varies with wind.
-    rng = B.MR(0.12, 0.72, 0.080, 0.140, "glint roughness")
+    # 0.08 to 0.14 was too wide. At that roughness the GGX lobe integrates
+    # across several diced micropolygons of the adaptive-subdivision cage, and
+    # the facet boundaries show up inside the sun glint as a hexagonal lattice.
+    # 0.05 to 0.095, with the wave normals below to carry the glitter, keeps
+    # the highlight a sheet of light without sampling the dicing grid.
+    rng = B.MR(0.12, 0.72, 0.050, 0.095, "glint roughness")
     B.L(comb.outputs[0], rng.inputs[0])
     # blend from the shipped constant so Glint Variation = 0 is unchanged
     blend = B.MR(0.0, 1.0, 0.08, 0.0, "glint blend")
@@ -213,6 +213,22 @@ def ocean_glint(tree, B, S, P):
         an = B.M('MULTIPLY', y=0.45, label="anisotropy")
         B.L(S["Glint Variation"], an.inputs[0])
         B.L(an.outputs[0], sockin(ocean, "Anisotropic"))
+
+    # Wave normals. The ocean is the displaced seabed shaded as water, with
+    # nothing on its Normal input, so the sea was a geometrically perfect
+    # sphere and the glint had no structure at all. A fine bump gives the
+    # highlight its glitter and breaks up the dicing facets described above.
+    nrm_in = sockin(ocean, "Normal")
+    if not nrm_in.links:
+        wave = B.noise('4D', 'FBM', 8.0, "wave normals")
+        sockin(wave, "Scale").default_value = 900.0
+        sockin(wave, "Roughness").default_value = 0.55
+        B.L(P, sockin(wave, "Vector"))
+        wb = B.N("ShaderNodeBump", "wave bump")
+        wb.inputs["Strength"].default_value = 0.30
+        wb.inputs["Distance"].default_value = 0.0025
+        B.L(sockout(wave, "Fac"), wb.inputs["Height"])
+        B.L(wb.outputs["Normal"], nrm_in)
     return "ocean_glint"
 
 
@@ -220,12 +236,17 @@ def coastal_foam(tree, B, S, P, FIELD):
     """White water in the shallow band along every coast."""
     ocean = need(tree, "OCEAN")
     depth = sockout(FIELD, "ocean_depth")
-    band = B.MR(0.0, 0.055, 1.0, 0.0, "foam band", 'SMOOTHSTEP')
+    # A scale-62 noise through a 0.42-0.62 gate quantises into binary dots:
+    # from orbit every coastline came out ringed with speckle rather than
+    # surf. Finer grain and a much softer gate read as white water, and the
+    # band itself was 0.055 of the depth field, a surf zone hundreds of km
+    # wide.
+    band = B.MR(0.0, 0.022, 1.0, 0.0, "foam band", 'SMOOTHSTEP')
     B.L(depth, band.inputs[0])
-    brk = B.noise('4D', 'FBM', 7.0, "foam breakup")
-    sockin(brk, "Scale").default_value = 62.0
+    brk = B.noise('4D', 'FBM', 5.0, "foam breakup")
+    sockin(brk, "Scale").default_value = 190.0
     B.L(P, sockin(brk, "Vector"))
-    bg = B.MR(0.42, 0.62, 0.0, 1.0, "foam gate")
+    bg = B.MR(0.30, 0.80, 0.0, 1.0, "foam gate")
     B.L(sockout(brk, "Fac"), bg.inputs[0])
     m1 = B.M('MULTIPLY', label="foam mask")
     B.L(band.outputs["Result"], m1.inputs[0])
