@@ -101,6 +101,13 @@ def build_clouds(radius=1000.0):
     sk("Cloud Colour", 'INPUT', 'NodeSocketColor', (1.0, 1.0, 1.0, 1))
     sk("Detail Scale", 'INPUT', 'NodeSocketFloat', 1.0, 0.05, 8.0)
     sk("Cloud Relief", 'INPUT', 'NodeSocketFloat', 0.30, 0.0, 1.0)
+    # Zonal belts. A terrestrial deck is one colour; a gas giant is not, and
+    # Cloud Colour alone made every gas giant a uniform beige ball at the high
+    # coverage those presets need. Belt Contrast defaults to 0, so every
+    # existing preset is bit-identical until it asks for belts.
+    sk("Belt Contrast", 'INPUT', 'NodeSocketFloat', 0.0, 0.0, 1.0)
+    sk("Belt Frequency", 'INPUT', 'NodeSocketFloat', 16.0, 1.0, 60.0)
+    sk("Belt Colour", 'INPUT', 'NodeSocketColor', (0.55, 0.42, 0.30, 1))
     sk("BSDF", 'OUTPUT', 'NodeSocketShader')
 
     N, L = g.nodes.new, g.links.new
@@ -245,11 +252,66 @@ def build_clouds(radius=1000.0):
     L(gi.outputs["Cloud Relief"], bump.inputs["Strength"])
     bump.inputs["Distance"].default_value = 0.4
 
+    # ---------- zonal belts ----------
+    #
+    # Jupiter's structure is colour, not opacity: pale zones and dark belts
+    # alternating with latitude, their boundaries pulled into waves by the
+    # zonal jets rather than ruled straight. sin(latitude * frequency) gives
+    # the alternation; warping the latitude by the same field the clouds use
+    # gives the waves, so belt edges track the flow instead of cutting across
+    # it. At Belt Contrast 0 the mix is a no-op and the deck is Cloud Colour.
+    bsep = N("ShaderNodeSeparateXYZ"); bsep.location = (-1100, -1000)
+    L(Pw.outputs["Vector"], bsep.inputs["Vector"])
+    # Pw already carries the warp, and its Z is the squashed latitude, so
+    # dividing the squash back out recovers a warped latitude in -1..1.
+    bz = M('DIVIDE', y=4.2, loc=(-920, -1000), nm="belt lat")
+    L(bsep.outputs["Z"], bz.inputs[0])
+    # Ruled bands read as paint. Jupiter's belt boundaries are shear zones:
+    # they wander, pinch and roll over into eddies. Displacing the latitude by
+    # the macro cloud field before the sine means the boundaries follow the
+    # same flow the clouds do, so the eddies sit ON the edges where they
+    # belong instead of floating over flat colour.
+    btc = M('SUBTRACT', y=0.5, loc=(-880, -1120)); L(b1.outputs["Factor"], btc.inputs[0])
+    bta = M('MULTIPLY', y=0.085, loc=(-800, -1120)); L(btc.outputs["Value"], bta.inputs[0])
+    btz = M('ADD', loc=(-800, -1000)); L(bz.outputs["Value"], btz.inputs[0])
+    L(bta.outputs["Value"], btz.inputs[1])
+    bfq = M('MULTIPLY', loc=(-740, -1060), nm="belt phase")
+    L(btz.outputs["Value"], bfq.inputs[0]); L(gi.outputs["Belt Frequency"], bfq.inputs[1])
+    bsin = M('SINE', loc=(-560, -1000), nm="belts")
+    L(bfq.outputs["Value"], bsin.inputs[0])
+    # -1..1 -> 0..1 with a smoothstep edge: belts have soft shear boundaries,
+    # not a sine's gradual roll, so the zones read as flat slabs of colour.
+    bnorm = MR((-380, -1000), -0.28, 0.28, 0.0, 1.0, "belt shape")
+    bnorm.interpolation_type = 'SMOOTHSTEP'
+    L(bsin.outputs["Value"], bnorm.inputs[0])
+    # Belts are not interchangeable. On Jupiter one is rust, the next barely
+    # distinguishable from the zone beside it. Varying the mix strength band
+    # by band along the same latitude axis gives that spread without a second
+    # colour input: a weak belt lands nearer the zone colour, a strong one
+    # nearer Belt Colour, and the deck stops looking like a ruled test card.
+    bvn = NOISE((-560, -1200), 1.0, 2.0, 0.5, "belt variation")
+    bvc = N("ShaderNodeCombineXYZ"); bvc.location = (-740, -1200)
+    L(bz.outputs["Value"], bvc.inputs[2])
+    L(bvc.outputs["Vector"], bvn.inputs["Vector"])
+    L(w2, bvn.inputs["W"])
+    bvr = MR((-380, -1200), 0.25, 0.75, 0.45, 1.0, "belt spread")
+    L(bvn.outputs["Factor"], bvr.inputs[0])
+    bsh = M('MULTIPLY', loc=(-290, -1100), nm="belt shaped")
+    L(bnorm.outputs["Result"], bsh.inputs[0]); L(bvr.outputs["Result"], bsh.inputs[1])
+    bamt = M('MULTIPLY', loc=(-200, -1000), nm="belt amount", clamp=True)
+    L(bsh.outputs["Value"], bamt.inputs[0])
+    L(gi.outputs["Belt Contrast"], bamt.inputs[1])
+    bcol = N("ShaderNodeMix"); bcol.data_type = 'RGBA'
+    bcol.location = (-20, -1000); bcol.label = "belt colour"
+    L(bamt.outputs["Value"], bcol.inputs[0])
+    L(gi.outputs["Cloud Colour"], bcol.inputs[6])
+    L(gi.outputs["Belt Colour"], bcol.inputs[7])
+
     # Translucent + Diffuse gives forward glow at the terminator plus body
     tr = N("ShaderNodeBsdfTranslucent"); tr.location = (60, 180)
-    L(gi.outputs["Cloud Colour"], tr.inputs["Color"])
+    L(bcol.outputs[2], tr.inputs["Color"])
     df = N("ShaderNodeBsdfDiffuse"); df.location = (60, 20)
-    L(gi.outputs["Cloud Colour"], df.inputs["Color"])
+    L(bcol.outputs[2], df.inputs["Color"])
     df.inputs["Roughness"].default_value = 0.6
     L(bump.outputs["Normal"], df.inputs["Normal"])
     body = N("ShaderNodeMixShader"); body.location = (300, 100)
