@@ -730,6 +730,28 @@ class PLNT_PT_sky(bpy.types.Panel):
         col.separator()
         col.prop(p, "day_length_h")
         col.prop(p, "time_scale")
+
+        # The lamp lights the scene but cannot be photographed. The body is
+        # optional because most shots never point at the star, and a 275-unit
+        # emissive sphere is not worth carrying when nothing can see it.
+        try:
+            from . import sun_body as _sb
+        except ImportError:
+            try:
+                import sun_body as _sb
+            except ImportError:
+                _sb = None
+        if _sb is not None:
+            lay.separator()
+            box = lay.box()
+            box.label(text="Physical Sun", icon='LIGHT_SUN')
+            if _sb.exists():
+                box.label(text="In scene, %.3f deg across"
+                          % _sb.ANGULAR_DIAMETER_DEG, icon='CHECKMARK')
+                box.operator("plnt.remove_sun_body", icon='X')
+            else:
+                box.label(text="Sun lamp only: nothing to photograph")
+                box.operator("plnt.add_sun_body", icon='LIGHT_SUN')
         col.prop(p, "beacon_rate")
         col.prop(p, "motion_blur")
         col.separator()
@@ -1281,6 +1303,43 @@ class PLNT_OT_quick_render(_Base):
         return {'FINISHED'}
 
 
+class PLNT_OT_add_sun_body(_Base):
+    bl_idname = "plnt.add_sun_body"
+    bl_label = "Add Physical Sun"
+    bl_description = ("Add a renderable sun at its true angular diameter, so "
+                      "the star can appear in shot. Lighting still comes from "
+                      "the sun lamp; the body is visible to camera rays only")
+
+    def execute(self, context):
+        try:
+            from . import sun_body as _sb
+        except ImportError:
+            import sun_body as _sb
+        try:
+            info = _sb.build()
+        except RuntimeError as ex:
+            self.report({'ERROR'}, str(ex))
+            return {'CANCELLED'}
+        self.report({'INFO'}, "Sun body: radius %.1f at %.0f"
+                    % (info["radius"], info["distance"]))
+        return {'FINISHED'}
+
+
+class PLNT_OT_remove_sun_body(_Base):
+    bl_idname = "plnt.remove_sun_body"
+    bl_label = "Remove Physical Sun"
+    bl_description = "Delete the renderable sun body; the sun lamp is untouched"
+
+    def execute(self, context):
+        try:
+            from . import sun_body as _sb
+        except ImportError:
+            import sun_body as _sb
+        _sb.remove()
+        self.report({'INFO'}, "Sun body removed")
+        return {'FINISHED'}
+
+
 class PLNT_OT_create_system(_Base):
     bl_idname = "plnt.create_system"
     bl_label = "Create Planet System"
@@ -1368,7 +1427,8 @@ CLASSES = ([PLNT_Props, PLNT_PT_main] + GROUP_PANELS + GENERATED +
             PLNT_OT_save_preset, PLNT_OT_load_preset,
             PLNT_OT_apply_performance, PLNT_OT_time_preset,
             PLNT_OT_apply_quality, PLNT_OT_apply_shot, PLNT_OT_quick_render,
-            PLNT_OT_create_system, PLNT_OT_remove_system])
+            PLNT_OT_create_system, PLNT_OT_remove_system,
+            PLNT_OT_add_sun_body, PLNT_OT_remove_sun_body])
 
 
 def register():
