@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Blender
+*.blend
+*.blend[0-9]
+
+# Working output that is not part of the add-on
+logs/
+renders/
+renders_v*/
+progress/
+*.zip
+!dist/plnt_planet-*.zip
+
+# Environments
+.venv/
+venv/
+
+# OS
+Thumbs.db
+.DS_Store

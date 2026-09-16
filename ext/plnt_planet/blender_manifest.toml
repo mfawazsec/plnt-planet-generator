@@ -1,0 +1,30 @@
+schema_version = "1.0.0"
+
+id = "plnt_planet"
+version = "3.0.0"
+name = "PLNT Procedural Planet"
+tagline = "Procedural sci-fi planets with terrain, weather and cities"
+maintainer = "PLNT"
+type = "add-on"
+
+blender_version_min = "5.0.0"
+
+license = ["SPDX:GPL-3.0-or-later"]
+
+tags = ["Geometry Nodes", "Material", "Render"]
+
+[permissions]
+files = "Save rendered frames and user presets"
+
+# Development tooling is not shipped.
+[build]
+paths_exclude_pattern = [
+  "__pycache__/",
+  "/.git/",
+  "*.blend",
+  "*.blend[0-9]",
+  "/tools/",
+  "/logs/",
+  "/renders/",
+  "/progress/",
+]

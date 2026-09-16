@@ -1,0 +1,14 @@
+# Normalise to LF in the repository; check out native.
+* text=auto
+
+# Shell scripts must be LF even on Windows checkouts, or bash chokes on \r.
+*.sh  text eol=lf
+
+# PowerShell is happiest with CRLF on Windows.
+*.ps1  text eol=crlf
+*.psm1 text eol=crlf
+
+# Binary
+*.zip  binary
+*.blend binary
+*.png  binary
