@@ -1,8 +1,8 @@
-# PLNT — Procedural Planet Generator for Blender
+# PLNT -- Procedural Planet Generator for Blender
 
 A Blender extension that builds a whole sci-fi planet system in an empty scene:
 terrain, ocean and ice, weather, atmosphere, rings, cities and night lights,
-orbital hardware, megastructures — all procedural, all driven from one N-panel,
+orbital hardware, megastructures -- all procedural, all driven from one N-panel,
 and all animated from a single clock.
 
 **Version 3.0.0 · Blender 5.0+ · Cycles · GPL-3.0-or-later**
@@ -20,16 +20,16 @@ and all animated from a single clock.
 ## First planet
 
 In an empty scene the panel offers a single button: **Create Planet System**.
-It builds the globe, its shells, the sun and the camera from source — nothing
+It builds the globe, its shells, the sun and the camera from source -- nothing
 is appended from a `.blend`, so the result is reproducible on any machine.
 
 From there:
 
-- **Preset** — 13 starting points: `earthlike`, `pristine_alien`,
+- **Preset** -- 13 starting points: `earthlike`, `pristine_alien`,
   `colonial_outpost`, `industrial_world`, `hyperdeveloped`, `megastructure`,
   `ringed_ice`, `volcanic`, `frozen`, `desert`, `ocean_world`, `dead_moon`,
   `gas_giant`. Each panel also has its own randomise and reset.
-- **Quality / Performance / Time Scale** — the quick row at the top.
+- **Quality / Performance / Time Scale** -- the quick row at the top.
 - Thirteen parameter panels, grouped under **Planet**, **Sky**,
   **Civilisation** and **Scene**.
 
@@ -80,7 +80,7 @@ the Scene: `plnt_time_scale`, `plnt_day_length_h`, `plnt_beacon_rate`.
 |---|---|
 | `dist/plnt_planet-3.0.0.zip` | The installable extension. Built and validated with Blender's own `extension build`. |
 | `ext/plnt_planet/` | Extension package source (manifest + modules), generated from the working tree. |
-| `core/` | The working tree — the source of truth. |
+| `core/` | The working tree -- the source of truth. |
 | `plnt_*.py`, `PLNT_presets.py` | Flat modules the build folds into the package. |
 | `tools/` | Build and validation tooling. Not shipped inside the extension. |
 | `docs/` | Development log, version reports, the audit v3 answers. |
@@ -102,7 +102,7 @@ the Scene: `plnt_time_scale`, `plnt_day_length_h`, `plnt_beacon_rate`.
 | `core/render.py` | Quality presets, performance tiers, device probing. |
 | `core/anim.py` | One clock for the whole system: Kepler rates, drivers, `sync()`. |
 | `core/nodeutil.py` | Socket resolution that fails loudly instead of guessing. |
-| `plnt_field.py` | Terrain field — emits geometry **and** shader versions from one source. |
+| `plnt_field.py` | Terrain field -- emits geometry **and** shader versions from one source. |
 | `plnt_surface.py` | Per-pixel surface, ocean, displacement. |
 | `plnt_tech.py` | Cities, roads, grid, agriculture, night lights. |
 | `plnt_atmos.py` | Cloud and atmosphere shells. |
@@ -113,7 +113,7 @@ the Scene: `plnt_time_scale`, `plnt_day_length_h`, `plnt_beacon_rate`.
 ## Building from source
 
 The working tree uses flat top-level modules loaded by path, which cannot work
-inside an extension — the package name is `bl_ext.<repo>.<id>`, and
+inside an extension -- the package name is `bl_ext.<repo>.<id>`, and
 `sys.modules["plnt_tech"]` would collide with anything else on the machine
 using that name. `build_extension.py` rewrites those loaders into real relative
 imports and assembles `ext/plnt_planet/`.
@@ -141,7 +141,7 @@ Any Python 3 runs the first step; it only moves text around. Blender's own
 `check_all` covers the failure modes this project actually hit: dead nodes,
 sockets with no UI, sockets with no tooltip, inputs that cannot reach an
 output, preset bleed, a broken package, and a planet larger than its own
-atmosphere. Its last two checks want a `.blend` — pass one with `-Blend`; the
+atmosphere. Its last two checks want a `.blend` -- pass one with `-Blend`; the
 first three run on factory startup and need nothing.
 
 Blender is found via `$env:PLNT_BLENDER` / `$PLNT_BLENDER`, then the usual
@@ -153,10 +153,10 @@ export PLNT_BLENDER="flatpak run --command=blender org.blender.Blender"
 
 ## Known gaps
 
-1. **Cloud shadows.** Measured at 98.2 % of baseline with them off — the shadow
+1. **Cloud shadows.** Measured at 98.2 % of baseline with them off -- the shadow
    rays are 2 % of render time, inside the noise. An analytic refactor is still
    worth doing for better-defined shadows. Design is in `docs/DEVLOG.md`.
-2. **Cold lava crust** — the fix is written and queued; confirm in a frame.
+2. **Cold lava crust** -- the fix is written and queued; confirm in a frame.
 3. **Atmosphere is brighter** than the volume it replaced. `Intensity` toward
    0.6 recovers the older contrast at no speed cost.
 4. **Rings are darker** but structurally richer.

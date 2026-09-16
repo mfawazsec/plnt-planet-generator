@@ -1,4 +1,4 @@
-"""PLNT_presets — preset library, randomiser and N-panel UI.
+"""PLNT_presets -- preset library, randomiser and N-panel UI.
 
 Lives as a text datablock inside the .blend. Run it once (Text Editor > Run
 Script, or it auto-registers on load if `Register` is ticked) to add the

@@ -1,4 +1,4 @@
-# PLNT — Procedural Sci-Fi Planet Generator
+# PLNT -- Procedural Sci-Fi Planet Generator
 
 > **Development log.** This is the working record kept while PLNT was built:
 > architecture, the API traps hit along the way, measured costs and the
@@ -43,8 +43,8 @@ system now moves from one Time Scale control.
 | `core/render.py` | Quality presets, performance tiers and device probing. |
 | `core/anim.py` | **One clock for the whole system.** Kepler rates, the drivers, and `sync()`. |
 | `core/nodeutil.py` | Socket resolution that fails loudly instead of guessing. |
-| `plnt_field.py` | Terrain field — emits geometry **and** shader versions from one source. |
-| `plnt_surface.py` | `PLNT_SurfaceShader` — per-pixel surface, ocean, displacement. |
+| `plnt_field.py` | Terrain field -- emits geometry **and** shader versions from one source. |
+| `plnt_surface.py` | `PLNT_SurfaceShader` -- per-pixel surface, ocean, displacement. |
 | `plnt_tech.py` | Technology layer (cities, roads, grid, agriculture, night lights). |
 | `plnt_atmos.py` | Cloud and atmosphere shells. |
 | `plnt_patch.py` | `PLNT_Patch` ground rig. |
@@ -309,9 +309,9 @@ Or a single shot directly:
   -- --mode final --shots 1,2,3 --out renders_v3
 ```
 
-Paths **must be absolute**. This started as a Flatpak trap — the sandbox
+Paths **must be absolute**. This started as a Flatpak trap -- the sandbox
 resolved relative paths against `/app/blender` and silently loaded the factory
-default — and the habit is worth keeping on Windows, where a relative path
+default -- and the habit is worth keeping on Windows, where a relative path
 resolves against whatever directory the shell happens to be in.
 
 `--time-scale` sets the clock from the command line, with no add-on registered:
@@ -371,7 +371,7 @@ shader displaces by `(field_elevation − attribute_elevation) × Relief Strengt
 i.e. exactly the detail the base mesh could not carry, recovered at dice
 resolution. This is what makes close-ups hold up.
 
-**Sun direction.** `matrix_world` is *not* a dependency-tracked driver path — it
+**Sun direction.** `matrix_world` is *not* a dependency-tracked driver path -- it
 silently freezes. Instead `PLNT_SunDir` is an empty parented to the sun at local
 `(0,0,1)`; since the sun sits at the pivot origin its world location *is* the
 sun's Z axis, and `TRANSFORMS`/`WORLD_SPACE` location drivers do track.
@@ -413,11 +413,11 @@ raises with the real socket list rather than letting a wrong guess through.
 - Geometry-node modifier inputs are no longer plain IDProperties:
   `mod.properties.inputs["Socket_N"]["value"]`, keyed by identifier not name.
 - Editing a node group's interface **resets every modifier value** to defaults.
-- `Map Range` and `ShaderNodeMix` have duplicate socket names — index by integer
+- `Map Range` and `ShaderNodeMix` have duplicate socket names -- index by integer
   (Mix RGBA: in 0/6/7, **out 2**).
 - GN-generated geometry carries no material; it needs a `Set Material` node.
 
-## Performance — measured, not assumed
+## Performance -- measured, not assumed
 
 Every number below comes from `tools/ablate_paired.sh`: each mutation is run
 against its own baseline taken immediately before it, at 1280x720 / 128 fixed
@@ -619,5 +619,5 @@ never identified. See "What the dicing rates should probably become" above.
 `plnt_check.py` measures subject coverage, frame edges touched, centroid offset
 and emptiest quadrant against the brief's mandatory rules. 9/10 pass outright.
 Shot 07 flags only because a night-side planet falls below the luminance
-threshold, so the detector sees the lit crescent rather than the disc — the
+threshold, so the detector sees the lit crescent rather than the disc -- the
 frame itself has the limb crossing three edges with a diagonal terminator.

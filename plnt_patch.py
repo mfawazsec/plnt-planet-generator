@@ -1,4 +1,4 @@
-"""PLNT_Patch — ground-level terrain patch.
+"""PLNT_Patch -- ground-level terrain patch.
 
 A separate object at metre scale. Patch XY is mapped to a spherical coordinate
 on the same planet and PLNT_TerrainField is sampled there, so the patch matches

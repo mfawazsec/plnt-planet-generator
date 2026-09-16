@@ -1,4 +1,4 @@
-# PLNT v2 — what changed, and how it was verified
+# PLNT v2 -- what changed, and how it was verified
 
 ## The short version
 
@@ -35,7 +35,7 @@ percentages should not be quoted. The atmosphere, cloud and shader figures are
 from the paired runs and are solid.
 
 The ray-marched atmosphere cost more than the surface shader, displacement and
-subdivision combined — Cycles was stepping up to 1024 times through a uniform
+subdivision combined -- Cycles was stepping up to 1024 times through a uniform
 spherical shell for every camera ray and every shadow ray.
 
 ### The fix
@@ -44,7 +44,7 @@ spherical shell for every camera ray and every shadow ray.
 through a spherical shell is a chord: with `b = |P x d|` the ray's impact
 parameter and `t = sqrt(R^2 - b^2)` the half-chord, a ray that misses the planet
 crosses `2*(t_outer - t_inner)` of air and one that hits it gets only the near
-part. That is exactly why the limb glows — grazing rays travel much further
+part. That is exactly why the limb glows -- grazing rays travel much further
 through air. 62 nodes, evaluated once per hit, no stepping, no volume.
 
 Measured at **28.5% of baseline** in a paired A/B.
@@ -69,26 +69,26 @@ changes in the README.
 
 Twice as fast overall. `detail` is the high-frequency energy ratio v2/v1: three
 shots hold within 1%, and shot 06 carries 81% more, which is the dune fields
-and strata. The gain is shot-dependent — it tracks how much atmosphere is in
-frame — so quote the range, not a single figure. Shot 03's 0.90 is the one
+and strata. The gain is shot-dependent -- it tracks how much atmosphere is in
+frame -- so quote the range, not a single figure. Shot 03's 0.90 is the one
 figure worth flagging: about 10% less high-frequency energy, most likely the
 analytic atmosphere softening the disc relative to the volume.
 
 ## 2. Detail
 
-- **Rings** — a real 196k-vertex polar annulus replacing a two-vertex quad.
+- **Rings** -- a real 196k-vertex polar annulus replacing a two-vertex quad.
   Named divisions (Cassini, Encke, Keeler, Maxwell, Huygens) that stay put
   across seeds, spiral density waves at integer arm counts, azimuthal clumping
   sampled in Cartesian space so there is no wrap seam, shepherd-moon wakes, and
   Henyey-Greenstein forward scattering. 153-node shader, 23 parameters.
-- **Orbital** — a twelve-module instanced library. 2,621 instances from 6,240
+- **Orbital** -- a twelve-module instanced library. 2,621 instances from 6,240
   unique triangles at level 10, with Realize Instances removed entirely. Truss
   bay count is derived from circumference so braces meet exactly. The greebles
   now take the curve's rotation, which is what turned dashed ribbons into
   structures.
-- **Megastructures** — mirror belts, partial ringworld arcs with lit inner
+- **Megastructures** -- mirror belts, partial ringworld arcs with lit inner
   faces, and a Dyson swarm, on their own object.
-- **Surface** — ocean glint variation, coastal foam, dune fields, rock strata,
+- **Surface** -- ocean glint variation, coastal foam, dune fields, rock strata,
   ice cracks, vegetation clumping, impact craters. Each gated by an input that
   Cycles folds away at zero, so unused features are free.
 
@@ -112,10 +112,10 @@ and v2 frames of shot 02 is **0.9908**.
 
 Two conclusions were reported and then retracted:
 
-- **"93% saving"** — from a mutation that rendered a degenerate frame (mean
+- **"93% saving"** -- from a mutation that rendered a degenerate frame (mean
   luminance 30.1 against 50.5 everywhere else). Every ablation cell now records
   the output image's statistics.
-- **"The clouds vanished"** — the planet had inflated to radius 1034 and
+- **"The clouds vanished"** -- the planet had inflated to radius 1034 and
   swallowed its own cloud deck (1004) and atmosphere (1030), because rebuilding
   the terrain field orphaned the globe rig's group node. The apply now fails
   outright if the globe reaches the shell radii, and group references are

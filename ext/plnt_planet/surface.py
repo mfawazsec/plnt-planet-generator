@@ -1,4 +1,4 @@
-"""PLNT_SurfaceShader — per-pixel surface shading.
+"""PLNT_SurfaceShader -- per-pixel surface shading.
 
 Evaluates PLNT_TerrainFieldSH directly in the shader rather than reading
 interpolated vertex attributes, so coastlines/rivers/ice resolve at pixel
