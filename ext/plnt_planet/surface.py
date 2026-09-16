@@ -326,10 +326,44 @@ def build_surface(name="PLNT_SurfaceShader", sun_dir_obj=None, pos_attr=None):
     hpn.inputs["Scale"].default_value = 5.5
     hpn.inputs["Detail"].default_value = 5.0
     L(nrm.outputs["Vector"], hpn.inputs["Vector"]); L(lwa.outputs["Value"], hpn.inputs["W"])
-    hpr = MR((280, -600), 0.30, 0.70, 0.18, 1.0, "heatregion")
+    # The floor matters more than the ceiling. At 0.18 the ground between the
+    # active provinces went to black under AgX, so the planet read as a handful
+    # of unconnected burning islands on a dead crust. Lifting it leaves the
+    # whole fissure web faintly lit everywhere -- cooling rock still glowing in
+    # the channels -- with the hot provinces standing well clear of it, which is
+    # both what Io looks like and what makes the surface read as one system.
+    hpr = MR((280, -600), 0.30, 0.70, 0.30, 1.0, "heatregion")
     L(hpn.outputs["Factor"], hpr.inputs[0])
+    # Secondary fissure network.
+    #
+    # One Voronoi gives one set of cell boundaries: a clean tessellation with
+    # nothing between the lines, which reads as a crackle glaze rather than as
+    # a volcanic province. Io's flows are fissure-fed -- long channels spreading
+    # off the main vents and dying out in the plains between them. A second,
+    # finer network gated by proximity to the first gives exactly that: the
+    # fine lines are brightest where they meet a major fissure and fade as they
+    # run away from it, so the whole surface reads as connected rather than as
+    # two patterns laid over each other.
+    lvn2 = N("ShaderNodeTexVoronoi"); lvn2.location = (100, -760)
+    lvn2.label = "lava branches"
+    lvn2.voronoi_dimensions = '4D'; lvn2.feature = 'DISTANCE_TO_EDGE'
+    lvn2.inputs["Scale"].default_value = 33.0
+    lvn2.inputs["Randomness"].default_value = 1.0
+    L(lwp.outputs["Vector"], lvn2.inputs["Vector"])
+    L(lwa.outputs["Value"], lvn2.inputs["W"])
+    crack2 = MR((280, -760), 0.0, 0.055, 1.0, 0.0, "branch")
+    L(lvn2.outputs["Distance"], crack2.inputs[0])
+    csh2 = M('POWER', y=2.4, loc=(460, -760)); L(crack2.outputs["Result"], csh2.inputs[0])
+    near = MR((460, -900), 0.0, 0.55, 0.30, 1.0, "branch feed")
+    L(crack.outputs["Result"], near.inputs[0])
+    brg = M('MULTIPLY', loc=(640, -760), nm="branch gated")
+    L(csh2.outputs["Value"], brg.inputs[0]); L(near.outputs["Result"], brg.inputs[1])
+    brw = M('MULTIPLY', y=0.62, loc=(800, -760)); L(brg.outputs["Value"], brw.inputs[0])
+    fiss = M('ADD', loc=(640, -540), nm="fissures", clamp=True)
+    L(csh.outputs["Value"], fiss.inputs[0]); L(brw.outputs["Value"], fiss.inputs[1])
+
     heat = M('MULTIPLY', loc=(640, -400), nm="heat")
-    L(csh.outputs["Value"], heat.inputs[0]); L(hpr.outputs["Result"], heat.inputs[1])
+    L(fiss.outputs["Value"], heat.inputs[0]); L(hpr.outputs["Result"], heat.inputs[1])
     # deeper basins run hotter
     dboost = MR((460, -600), 0.0, 1.0, 0.75, 1.35, "depthheat")
     L(dt.outputs["Result"], dboost.inputs[0])
@@ -350,8 +384,18 @@ def build_surface(name="PLNT_SurfaceShader", sun_dir_obj=None, pos_attr=None):
     # square the intensity so crust emits almost nothing and cores stay hot
     lint = M('POWER', y=2.1, loc=(1000, -600))
     L(heat2.outputs["Value"], lint.inputs[0])
+    # Lava was gated hard on sea_mask, so the molten basins glowed and the
+    # crust between them emitted nothing at all. That draws a planet as a set
+    # of unconnected burning islands floating on black, when what a volcanic
+    # world actually has is one fissure system: the basins are where it has
+    # broken through, and the same channels carry on across the crust between
+    # them, cooler and dimmer but continuous. Giving land a fraction of the
+    # emission lets the network read as connected without the crust competing
+    # with the basins.
+    landl = MR((1000, -600), 0.0, 1.0, 0.13, 1.0, "crust glow")
+    L(o["sea_mask"], landl.inputs[0])
     lavm = M('MULTIPLY', loc=(1180, -600), nm="lavamask")
-    L(o["sea_mask"], lavm.inputs[0]); L(gi.outputs["Lava Emission"], lavm.inputs[1])
+    L(landl.outputs["Result"], lavm.inputs[0]); L(gi.outputs["Lava Emission"], lavm.inputs[1])
     lavi = M('MULTIPLY', loc=(1360, -600))
     L(lint.outputs["Value"], lavi.inputs[0]); L(lavm.outputs["Value"], lavi.inputs[1])
     lavs = N("ShaderNodeVectorMath"); lavs.operation = 'SCALE'; lavs.location = (1360, -400)

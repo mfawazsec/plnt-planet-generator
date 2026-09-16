@@ -419,27 +419,127 @@ def build(radius=1000.0, name="PLNT_MegaRig"):
 
 
 def build_materials():
-    """Mirror and habitat-glow materials."""
+    """Mirror and habitat-glow materials.
+
+    Both used to be a single flat BSDF, which is why the megastructures read as
+    smooth plastic rings at any distance where they filled a frame. Nothing
+    built at this scale is a continuous surface: a collector belt is thousands
+    of individually pointed panels, and a habitat ring is a hull with windows
+    in it. Both are procedural off object coordinates, so they cost no geometry
+    and no UVs, and both key their variation off Voronoi cells so neighbouring
+    panels differ the way manufactured things do.
+    """
+    def coords(nt, scale, loc=(-1000, 0)):
+        tc = nt.nodes.new("ShaderNodeTexCoord"); tc.location = loc
+        sc = nt.nodes.new("ShaderNodeVectorMath"); sc.operation = 'SCALE'
+        sc.location = (loc[0] + 200, loc[1])
+        nt.links.new(sockout(tc, "Object"), sc.inputs[0])
+        sockin(sc, "Scale").default_value = scale
+        return sockout(sc, "Vector")
+
     mir = bpy.data.materials.get("PLNT_MegaMirror") or \
         bpy.data.materials.new("PLNT_MegaMirror")
     mir.use_nodes = True
     nt = mir.node_tree; nt.nodes.clear()
-    b = nt.nodes.new("ShaderNodeBsdfPrincipled"); b.location = (0, 0)
-    sockin(b, "Base Color").default_value = (0.92, 0.94, 0.97, 1.0)
+    L = nt.links.new
+    P = coords(nt, 0.09)
+
+    # Panel plates. F1 gives one cell per panel to randomise; DISTANCE_TO_EDGE
+    # gives the seam between them.
+    cells = nt.nodes.new("ShaderNodeTexVoronoi"); cells.location = (-600, 200)
+    cells.voronoi_dimensions = '3D'; cells.feature = 'F1'
+    sockin(cells, "Scale").default_value = 26.0
+    sockin(cells, "Randomness").default_value = 0.45
+    L(P, sockin(cells, "Vector"))
+    edge = nt.nodes.new("ShaderNodeTexVoronoi"); edge.location = (-600, -100)
+    edge.voronoi_dimensions = '3D'; edge.feature = 'DISTANCE_TO_EDGE'
+    sockin(edge, "Scale").default_value = 26.0
+    sockin(edge, "Randomness").default_value = 0.45
+    L(P, sockin(edge, "Vector"))
+
+    seam = nt.nodes.new("ShaderNodeMapRange"); seam.location = (-400, -100)
+    seam.interpolation_type = 'SMOOTHSTEP'
+    seam.inputs["From Min"].default_value = 0.0
+    seam.inputs["From Max"].default_value = 0.045
+    seam.inputs["To Min"].default_value = 1.0
+    seam.inputs["To Max"].default_value = 0.0
+    L(sockout(edge, "Distance"), seam.inputs["Value"])
+
+    sep = nt.nodes.new("ShaderNodeSeparateXYZ"); sep.location = (-400, 200)
+    L(sockout(cells, "Color"), sep.inputs["Vector"])
+
+    # Per-panel roughness. A belt where every panel has the same finish
+    # catches the sun as one sheet; spread it and the belt sparkles panel by
+    # panel as it turns, which is the read we want in motion.
+    rgh = nt.nodes.new("ShaderNodeMapRange"); rgh.location = (-200, 300)
+    rgh.inputs["From Min"].default_value = 0.0
+    rgh.inputs["From Max"].default_value = 1.0
+    rgh.inputs["To Min"].default_value = 0.04
+    rgh.inputs["To Max"].default_value = 0.22
+    L(sep.outputs["X"], rgh.inputs["Value"])
+    # Seams are structure, not mirror.
+    rgh2 = nt.nodes.new("ShaderNodeMapRange"); rgh2.location = (0, 300)
+    rgh2.inputs["From Min"].default_value = 0.0
+    rgh2.inputs["From Max"].default_value = 1.0
+    rgh2.inputs["To Max"].default_value = 0.62
+    L(seam.outputs["Result"], rgh2.inputs["Value"])
+    L(rgh.outputs["Result"], rgh2.inputs["To Min"])
+
+    tint = nt.nodes.new("ShaderNodeMix"); tint.data_type = 'RGBA'
+    tint.location = (-200, 60); tint.label = "panel tint"
+    tint.inputs[6].default_value = (0.92, 0.94, 0.97, 1.0)
+    tint.inputs[7].default_value = (0.62, 0.66, 0.74, 1.0)
+    L(sep.outputs["Y"], tint.inputs[0])
+    body = nt.nodes.new("ShaderNodeMix"); body.data_type = 'RGBA'
+    body.location = (0, 60); body.label = "seam darken"
+    body.inputs[7].default_value = (0.22, 0.23, 0.26, 1.0)
+    L(seam.outputs["Result"], body.inputs[0])
+    L(tint.outputs[2], body.inputs[6])
+
+    b = nt.nodes.new("ShaderNodeBsdfPrincipled"); b.location = (300, 0)
+    L(body.outputs[2], sockin(b, "Base Color"))
     sockin(b, "Metallic").default_value = 1.0
     # never exactly 0: a perfect mirror on a large curved panel throws
     # non-converging fireflies that survive denoising
-    sockin(b, "Roughness").default_value = 0.06
-    o = nt.nodes.new("ShaderNodeOutputMaterial"); o.location = (300, 0)
-    nt.links.new(sockout(b, "BSDF"), sockin(o, "Surface"))
+    L(rgh2.outputs["Result"], sockin(b, "Roughness"))
+    o = nt.nodes.new("ShaderNodeOutputMaterial"); o.location = (600, 0)
+    L(sockout(b, "BSDF"), sockin(o, "Surface"))
 
     glow = bpy.data.materials.get("PLNT_MegaGlow") or \
         bpy.data.materials.new("PLNT_MegaGlow")
     glow.use_nodes = True
     nt = glow.node_tree; nt.nodes.clear()
-    e = nt.nodes.new("ShaderNodeEmission"); e.location = (0, 0)
-    sockin(e, "Color").default_value = (1.0, 0.86, 0.62, 1.0)
-    sockin(e, "Strength").default_value = 2.6
-    o = nt.nodes.new("ShaderNodeOutputMaterial"); o.location = (300, 0)
+    L = nt.links.new
+    P = coords(nt, 0.09)
+
+    # Habitat windows: dense cells, most lit, some dark, colour varying
+    # between warm interior light and the cooler service lighting.
+    wc = nt.nodes.new("ShaderNodeTexVoronoi"); wc.location = (-600, 100)
+    wc.voronoi_dimensions = '3D'; wc.feature = 'F1'
+    sockin(wc, "Scale").default_value = 95.0
+    sockin(wc, "Randomness").default_value = 0.85
+    L(P, sockin(wc, "Vector"))
+    wsep = nt.nodes.new("ShaderNodeSeparateXYZ"); wsep.location = (-400, 100)
+    L(sockout(wc, "Color"), wsep.inputs["Vector"])
+    lit = nt.nodes.new("ShaderNodeMapRange"); lit.location = (-200, 200)
+    lit.interpolation_type = 'SMOOTHSTEP'
+    lit.inputs["From Min"].default_value = 0.18
+    lit.inputs["From Max"].default_value = 0.34
+    lit.inputs["To Min"].default_value = 0.12
+    lit.inputs["To Max"].default_value = 1.0
+    L(wsep.outputs["X"], lit.inputs["Value"])
+    wcol = nt.nodes.new("ShaderNodeMix"); wcol.data_type = 'RGBA'
+    wcol.location = (-200, -80); wcol.label = "window colour"
+    wcol.inputs[6].default_value = (1.0, 0.82, 0.55, 1.0)
+    wcol.inputs[7].default_value = (0.74, 0.86, 1.0, 1.0)
+    L(wsep.outputs["Z"], wcol.inputs[0])
+
+    e = nt.nodes.new("ShaderNodeEmission"); e.location = (100, 0)
+    L(wcol.outputs[2], sockin(e, "Color"))
+    st = nt.nodes.new("ShaderNodeMath"); st.operation = 'MULTIPLY'
+    st.location = (-20, 200); st.inputs[1].default_value = 2.6
+    L(lit.outputs["Result"], st.inputs[0])
+    L(st.outputs[0], sockin(e, "Strength"))
+    o = nt.nodes.new("ShaderNodeOutputMaterial"); o.location = (400, 0)
     nt.links.new(sockout(e, "Emission"), sockin(o, "Surface"))
     return mir, glow

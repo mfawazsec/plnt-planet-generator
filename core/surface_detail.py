@@ -47,6 +47,16 @@ DETAIL_IN = [
      "Impact craters with raised rims. For airless worlds and dead moons"),
     ("Crater Scale", 34.0, 1.0, 400.0,
      "How many craters there are; higher values give smaller, denser craters"),
+    ("Maria Amount", 0.0, 0.0, 1.0,
+     "Dark volcanic plains flooding the low ground between the highlands, as "
+     "on Earth's Moon. They are younger than the terrain around them, so they "
+     "are darker, smoother and far less cratered, and that contrast is most "
+     "of what makes a real moon look like a real moon"),
+    ("Maria Scale", 2.2, 0.2, 20.0,
+     "Size of the flooded basins; lower values give fewer, larger seas"),
+    ("Crater Ray Amount", 0.0, 0.0, 1.0,
+     "Bright ejecta rays thrown radially from the youngest large craters, "
+     "crossing everything they land on"),
 ]
 
 
@@ -423,6 +433,140 @@ def ice_cracks(tree, B, S, P, FIELD):
     return "ice_cracks"
 
 
+def lunar_maria(tree, B, S, P, FIELD):
+    """Dark flooded plains and bright ejecta rays.
+
+    A moon with one albedo and one crater density everywhere reads as a golf
+    ball no matter how good the craters are. Earth's Moon is two terrains: old
+    bright highlands, saturated with impacts, and younger basalt seas that
+    flooded the low ground, are about half as bright and carry a fraction of
+    the craters. Rays are the other half of the story -- ejecta thrown from the
+    youngest large impacts, ignoring whatever terrain they land on.
+
+    Runs after craters() and reuses that function's fine Voronoi rather than
+    evaluating a second one, so the rays come off the same craters the relief
+    was built from instead of floating free of them.
+    """
+    # Spliced into the combined land albedo, NOT into `rockcol`.
+    #
+    # rockcol is only the rock branch, and the rock branch is gated by slope.
+    # Darkening it paints the seas onto whatever happens to be steep, so the
+    # maria came out as ribbons tracing valley walls instead of as flooded
+    # basins. ">rock" is the mix after sand, vegetation and rock have been
+    # combined, which is the first point where the whole ground is one colour.
+    land = need(tree, ">rock")
+    vor = find(tree, "crater cells fine")
+
+    # ---- maria mask -------------------------------------------------------
+    # Deliberately few octaves. A narrow threshold across a detailed fractal
+    # slices it into coastline filaments -- tendrils spidering over the whole
+    # globe, which is what the first pass drew and is nothing like a flooded
+    # basin. Two octaves give a smooth field whose level set is a small number
+    # of solid, closed regions, and the sharp threshold then gives them the
+    # abrupt shoreline a lava flood actually leaves.
+    mn = B.noise('4D', 'FBM', 1.6, "maria field")
+    B.L(P, sockin(mn, "Vector"))
+    B.L(S["Maria Scale"], sockin(mn, "Scale"))
+    sockin(mn, "Roughness").default_value = 0.42
+    # A narrow threshold gives contiguous seas with coastlines rather than a
+    # soft grey wash. Around a fifth of the surface, which is close to the
+    # Moon's 17%.
+    mk = B.MR(0.530, 0.575, 0.0, 1.0, "maria mask", 'SMOOTHSTEP')
+    B.L(sockout(mn, "Fac"), mk.inputs[0])
+    maria = B.M('MULTIPLY', label="maria", clamp=True)
+    B.L(mk.outputs["Result"], maria.inputs[0])
+    B.L(S["Maria Amount"], maria.inputs[1])
+
+    # ---- fewer craters on the plains --------------------------------------
+    # The seas flooded after most of the bombardment, so they record only what
+    # has hit them since. Suppressing the profile rather than the count keeps
+    # a few large ones, which is what the real maria show.
+    layers = find(tree, "crater layers")
+    if layers is not None:
+        keep = B.MR(0.0, 1.0, 1.0, 0.22, "maria crater keep")
+        B.L(maria.outputs[0], keep.inputs[0])
+        cconsumers = splice(tree, layers, 0)
+        cs = B.M('MULTIPLY', label="craters x maria")
+        B.L(layers.outputs[0], cs.inputs[0])
+        B.L(keep.outputs["Result"], cs.inputs[1])
+        reconnect(tree, cs.outputs[0], cconsumers)
+
+    # ---- rays -------------------------------------------------------------
+    rays = None
+    if vor is not None:
+        v = B.VM('SUBTRACT', "ray vector")
+        B.L(P, v.inputs[0])
+        B.L(sockout(vor, "Position"), v.inputs[1])
+        rlen0 = B.VM('LENGTH', "ray radius")
+        B.L(sockout(v, "Vector"), rlen0.inputs[0])
+        # Voronoi hands back Position in the INPUT space, so this distance is
+        # in unit-sphere units while a crater cell is only about 1/Crater
+        # Scale across. Measured in those units a ray a couple of cells long
+        # reaches a third of the way round the moon, which is what the first
+        # pass drew. Rescale into cell widths and the reach numbers below mean
+        # what they say: rays start outside the rim and are gone within a few
+        # crater radii.
+        rlen = B.M('MULTIPLY', label="ray radius cells")
+        B.L(rlen0.outputs["Value"], rlen.inputs[0])
+        B.L(S["Crater Scale"], rlen.inputs[1])
+        rdir = B.VM('NORMALIZE', "ray direction")
+        B.L(sockout(v, "Vector"), rdir.inputs[0])
+        # Streaks are angular: a noise sampled on the DIRECTION alone varies
+        # around the crater and not along the way out from it, which is what
+        # makes a ray a ray instead of a blotch.
+        rsc = B.VM('SCALE', "ray fan")
+        B.L(sockout(rdir, "Vector"), rsc.inputs[0])
+        sockin(rsc, "Scale").default_value = 58.0
+        rn = B.noise('4D', 'FBM', 3.0, "ray streaks")
+        sockin(rn, "Scale").default_value = 1.0
+        sockin(rn, "Roughness").default_value = 0.62
+        B.L(sockout(rsc, "Vector"), sockin(rn, "Vector"))
+        streak = B.MR(0.56, 0.72, 0.0, 1.0, "ray streak gate", 'SMOOTHSTEP')
+        B.L(sockout(rn, "Fac"), streak.inputs[0])
+        # Radial reach: nothing inside the rim, everything gone by a few
+        # crater radii out.
+        near = B.MR(0.22, 0.36, 0.0, 1.0, "ray inner", 'SMOOTHSTEP')
+        B.L(rlen.outputs[0], near.inputs[0])
+        far = B.MR(0.36, 2.60, 1.0, 0.0, "ray outer", 'SMOOTHSTEP')
+        B.L(rlen.outputs[0], far.inputs[0])
+        reach = B.M('MULTIPLY', label="ray reach")
+        B.L(near.outputs["Result"], reach.inputs[0])
+        B.L(far.outputs["Result"], reach.inputs[1])
+        # Only the youngest craters still have rays; the rest have been
+        # gardened away by micrometeorites.
+        sep = B.N("ShaderNodeSeparateXYZ", "ray cell rnd")
+        B.L(sockout(vor, "Color"), sep.inputs["Vector"])
+        fresh = B.M('GREATER_THAN', y=0.82, label="ray fresh")
+        B.L(sep.outputs["Z"], fresh.inputs[0])
+        r1 = B.M('MULTIPLY', label="ray shape")
+        B.L(streak.outputs["Result"], r1.inputs[0])
+        B.L(reach.outputs[0], r1.inputs[1])
+        r2 = B.M('MULTIPLY', label="ray gated")
+        B.L(r1.outputs[0], r2.inputs[0])
+        B.L(fresh.outputs[0], r2.inputs[1])
+        rays = B.M('MULTIPLY', label="rays", clamp=True)
+        B.L(r2.outputs[0], rays.inputs[0])
+        B.L(S["Crater Ray Amount"], rays.inputs[1])
+
+    # ---- albedo: darken the seas, then lay the rays over everything -------
+    consumers = splice(tree, land, 2)
+    dark = B.mix("maria tone")
+    dark.blend_type = 'MULTIPLY'
+    dark.inputs[7].default_value = (0.38, 0.375, 0.395, 1.0)
+    B.L(maria.outputs[0], dark.inputs[0])
+    B.L(land.outputs[2], dark.inputs[6])
+    out = dark
+    if rays is not None:
+        bright = B.mix("ray tone")
+        bright.blend_type = 'MULTIPLY'
+        bright.inputs[7].default_value = (1.85, 1.82, 1.78, 1.0)
+        B.L(rays.outputs[0], bright.inputs[0])
+        B.L(dark.outputs[2], bright.inputs[6])
+        out = bright
+    reconnect(tree, out.outputs[2], consumers)
+    return "lunar_maria"
+
+
 def vegetation_clumping(tree, B, S, P):
     """Per-patch hue variation, so not every plant on the planet matches."""
     veg = need(tree, "sand>veg")
@@ -566,6 +710,7 @@ def apply_all(tree):
                      (vegetation_clumping, (tree, B, S, P)),
                      (dunes, (tree, B, S, P, FIELD)),
                      (craters, (tree, B, S, P, FIELD)),
+                     (lunar_maria, (tree, B, S, P, FIELD)),
                      (lava_crust, (tree, B, S, P, FIELD))):
         done.append(fn(*args))
     return {"sockets_added": added, "features": done, "nodes": len(tree.nodes)}

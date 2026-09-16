@@ -86,11 +86,16 @@ P["pristine_alien"] = dict(
                   "Polar Cap Extent": 0.12, "Tectonic Belt Width": 0.26, "Warp Strength": 0.62}),
     surface={"Vegetation Hue": (0.230, 0.020, 0.075, 1), "Rock Hue": (0.145, 0.055, 0.058, 1),
              "Sand Hue": (0.330, 0.105, 0.090, 1), "Ice Brightness": 0.75,
-             "Ocean Shallow": (0.050, 0.180, 0.250, 1), "Ocean Deep": (0.004, 0.014, 0.045, 1),
+             # Teal-violet rather than Earth blue. The vegetation here is
+             # crimson, so a nitrogen-blue ocean underneath it reads as Earth
+             # with the land recoloured; shifting the water green in the
+             # shallows and indigo in the deeps makes the whole world foreign
+             # and separates it from the earthlike preset at a glance.
+             "Ocean Shallow": (0.030, 0.215, 0.205, 1), "Ocean Deep": (0.012, 0.010, 0.052, 1),
              "Shelf Boost": 0.420, "Vegetation Amount": 1.35, "River Tint": 0.95,
              "Ice Temp Threshold": 0.16, "Patchiness": 0.45, "Tech Level": 0.0, "Vegetation Clumping": 0.85, "Foam Amount": 0.160, "Glint Variation": 0.6, "Strata Amount": 0.3},
     clouds={"Cloud Coverage": 0.34, "Cloud Density": 1.1, "Band Strength": 0.42, "Detail Scale": 1.2},
-    atmo={"Density": 0.0336, "Atmo Colour": (0.30, 0.42, 1.0, 1), "Falloff": 3.0, "Pollution": 0.0},
+    atmo={"Density": 0.0336, "Atmo Colour": (0.36, 0.34, 1.0, 1), "Falloff": 3.0, "Pollution": 0.0},
     rings=False, orbital=0.0)
 
 P["earthlike"] = dict(
@@ -235,9 +240,15 @@ P["desert"] = dict(
              "Shelf Boost": 0.403, "Vegetation Amount": 0.16, "River Tint": 0.75,
              "Ice Temp Threshold": 0.10, "Patchiness": 0.48, "Tech Level": 2.0,
              "Light Colour Temp": 0.15, "Urban Density": 0.7, "Dune Amount": 0.95, "Dune Scale": 300.0, "Strata Amount": 0.32, "Crater Amount": 0.15},
-    clouds={"Cloud Coverage": 0.16, "Cloud Density": 0.8, "Band Strength": 0.40, "Detail Scale": 1.3,
-            "Cloud Colour": (1.0, 0.95, 0.88, 1)},
-    atmo={"Density": 0.0384, "Atmo Colour": (0.60, 0.42, 0.30, 1), "Falloff": 2.8, "Pollution": 0.22},
+    # The deck is dust, not water. Mars' storms organise into latitude bands
+    # and lift enough material that the limb haze stays bright to ~20 km and
+    # stratifies above it, so coverage and density both go up, the colour goes
+    # to suspended ochre, and a little Belt Contrast gives the storm fronts
+    # somewhere to sit.
+    clouds={"Cloud Coverage": 0.44, "Cloud Density": 1.7, "Band Strength": 0.72, "Detail Scale": 1.7,
+            "Cloud Colour": (0.88, 0.66, 0.42, 1), "Belt Contrast": 0.30,
+            "Belt Frequency": 9.0, "Belt Colour": (0.62, 0.40, 0.24, 1)},
+    atmo={"Density": 0.0760, "Atmo Colour": (0.66, 0.40, 0.24, 1), "Falloff": 2.2, "Pollution": 0.55},
     rings=False, orbital=0.5)
 
 P["ocean_world"] = dict(
@@ -262,7 +273,14 @@ P["dead_moon"] = dict(
              "Ocean Shallow": (0.05, 0.05, 0.05, 1), "Ocean Deep": (0.02, 0.02, 0.02, 1),
              "Shelf Boost": 0.336, "Vegetation Amount": 0.0, "River Tint": 0.0,
              "Ice Temp Threshold": 0.0, "Patchiness": 0.42, "Tech Level": 0.0,
-             "Micro Disp Height": 0.534, "Crater Amount": 0.95, "Crater Scale": 30.0, "Strata Amount": 0.45},
+             # Matched against LRO: bright highlands saturated with impacts,
+             # dark basalt seas over roughly a fifth of the surface carrying a
+             # fraction of the craters, and rays off the youngest few. Strata
+             # drops right down -- bedding planes are a sedimentary feature and
+             # an airless basalt moon has no business showing them.
+             "Micro Disp Height": 0.534, "Crater Amount": 0.95, "Crater Scale": 30.0,
+             "Maria Amount": 0.90, "Maria Scale": 1.4, "Crater Ray Amount": 0.75,
+             "Strata Amount": 0.08},
     clouds={"Cloud Coverage": 0.0, "Cloud Density": 0.0, "Band Strength": 0.5, "Detail Scale": 1.0},
     atmo={"Density": 0.0022, "Atmo Colour": (0.5, 0.5, 0.5, 1), "Falloff": 4.0, "Pollution": 0.0},
     rings=False, orbital=0.0)
@@ -286,14 +304,14 @@ P["gas_giant"] = dict(
             "Belt Colour": (0.40, 0.26, 0.17, 1)},
     atmo={"Density": 0.0658, "Atmo Colour": (0.62, 0.50, 0.34, 1), "Falloff": 2.2, "Pollution": 0.0},
     rings=True, orbital=0.0,
-    ring={"Gap Amount": 0.72, "Band Scale": 140.0, "Ring Density": 0.9,
+    ring={"Gap Amount": 0.52, "Band Scale": 170.0, "Ring Density": 1.45,
           "Ring Colour": (0.74, 0.70, 0.62, 1),
           # dustier, warmer, less sharply divided than the ice rings
           "Ice Colour": (0.80, 0.78, 0.74, 1), "Dust Colour": (0.60, 0.48, 0.34, 1),
           "Rock Colour": (0.36, 0.30, 0.24, 1), "Composition Scale": 2.8,
-          "Band Contrast": 1.7, "Gap Softness": 0.24, "Division Depth": 0.75,
-          "Spiral Arms": 5.0, "Spiral Strength": 0.18, "Spiral Winding": 38.0,
-          "Wake Strength": 0.25, "Wake Count": 90.0,
+          "Band Contrast": 2.3, "Gap Softness": 0.16, "Division Depth": 0.95,
+          "Spiral Arms": 7.0, "Spiral Strength": 0.30, "Spiral Winding": 52.0,
+          "Wake Strength": 0.48, "Wake Count": 150.0,
           "Clump Scale": 4.5, "Clump Strength": 0.38,
           "Forward Anisotropy": 0.58, "Forward Gain": 2.2})
 
@@ -323,6 +341,7 @@ LOOK_DEFAULTS = {
     "Strata Amount": 0.0, "Strata Frequency": 90.0,
     "Ice Crack Amount": 0.0, "Vegetation Clumping": 0.0,
     "Crater Amount": 0.0, "Crater Scale": 34.0,
+    "Maria Amount": 0.0, "Maria Scale": 2.2, "Crater Ray Amount": 0.0,
 }
 CLOUD_DEFAULTS = {"Cloud Coverage": 0.55, "Cloud Density": 1.25, "Band Strength": 0.52,
                   "Detail Scale": 1.2, "Cloud Colour": (1.0, 1.0, 1.0, 1),
