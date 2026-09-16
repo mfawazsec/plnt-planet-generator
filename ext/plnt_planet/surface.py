@@ -359,11 +359,60 @@ def build_surface(name="PLNT_SurfaceShader", sun_dir_obj=None, pos_attr=None):
     emsum = N("ShaderNodeVectorMath"); emsum.operation = 'ADD'; emsum.location = (320, -140)
     L(emis, emsum.inputs[0]); L(lavs.outputs["Vector"], emsum.inputs[1])
 
+    # --- SEA ICE
+    #
+    # The ice factor was mixed into the LAND albedo chain only, so a world cold
+    # enough to grow caps over its continents still had open blue water at the
+    # pole, and "frozen" read as "temperate ocean with snowy landmasses". Sea
+    # ice is the same temperature mask applied over the ocean instead: it
+    # reuses `isc`, so it inherits Ice Brightness and the crack detail that
+    # core.surface_detail splices into `icecol`, and it is gated by sea_mask so
+    # the land side keeps its own terrain-shaded ice untouched.
+    #
+    # Rougher than open water (0.42 against 0.08) and a lower IOR: pack ice
+    # scatters where the sea reflects, which is what stops the cap reading as
+    # a painted white decal over a mirror.
+    # The land ice ramp is 0.09 of temperature wide, which on open water draws
+    # a razor-straight latitude line: the ice edge becomes a painted stripe.
+    # A real pack-ice margin is ragged over hundreds of km, so perturb the
+    # temperature with a large-scale noise before thresholding and give the
+    # sea ramp more than twice the width. Leads and polynyas fall out of the
+    # same noise for free.
+    sin_ = N("ShaderNodeTexNoise"); sin_.location = (-660, -300); sin_.label = "ice margin"
+    sin_.noise_dimensions = '4D'; sin_.noise_type = 'FBM'
+    sin_.inputs["Scale"].default_value = 9.0
+    sin_.inputs["Detail"].default_value = 7.0
+    sin_.inputs["Roughness"].default_value = 0.55
+    L(nrm.outputs["Vector"], sin_.inputs["Vector"])
+    siw = M('MULTIPLY', y=3.77, loc=(-840, -300)); L(gi.outputs["Seed"], siw.inputs[0])
+    L(siw.outputs["Value"], sin_.inputs["W"])
+    sic = M('SUBTRACT', y=0.5, loc=(-500, -300)); L(sin_.outputs["Factor"], sic.inputs[0])
+    sia = M('MULTIPLY', y=0.13, loc=(-420, -300)); L(sic.outputs["Value"], sia.inputs[0])
+    sit = M('ADD', loc=(-340, -240)); L(o["temperature"], sit.inputs[0])
+    L(sia.outputs["Value"], sit.inputs[1])
+    silo = M('SUBTRACT', y=0.20, loc=(-500, -180))
+    L(gi.outputs["Ice Temp Threshold"], silo.inputs[0])
+    sir = MR((-340, -120), None, None, 0.0, 1.0, "sea ice")
+    sir.interpolation_type = 'SMOOTHSTEP'
+    L(sit.outputs["Value"], sir.inputs[0])
+    L(gi.outputs["Ice Temp Threshold"], sir.inputs[1])
+    L(silo.outputs["Value"], sir.inputs[2])
+    sif = M('MULTIPLY', loc=(-200, -300), nm="seaice", clamp=True)
+    L(sir.outputs["Result"], sif.inputs[0]); L(o["sea_mask"], sif.inputs[1])
+    seaice = N("ShaderNodeBsdfPrincipled"); seaice.location = (200, -300)
+    seaice.label = "SEA ICE"
+    L(isc.outputs["Vector"], seaice.inputs["Base Color"])
+    seaice.inputs["Roughness"].default_value = 0.42
+    seaice.inputs["IOR"].default_value = 1.31
+    mxi = N("ShaderNodeMixShader"); mxi.location = (520, 300); mxi.label = "SEA ICE"
+    L(sif.outputs["Value"], mxi.inputs[0])
+    L(mx.outputs["Shader"], mxi.inputs[1]); L(seaice.outputs["BSDF"], mxi.inputs[2])
+
     em = N("ShaderNodeEmission"); em.location = (400, 60); em.label = "TECH_EMIT"
     L(emsum.outputs["Vector"], em.inputs["Color"])
     em.inputs["Strength"].default_value = 1.0
     add = N("ShaderNodeAddShader"); add.location = (640, 200); add.label = "SURF+TECH"
-    L(mx.outputs["Shader"], add.inputs[0]); L(em.outputs["Emission"], add.inputs[1])
+    L(mxi.outputs["Shader"], add.inputs[0]); L(em.outputs["Emission"], add.inputs[1])
     L(add.outputs["Shader"], go.inputs["BSDF"])
 
     # --- micro-displacement
