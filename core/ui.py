@@ -273,7 +273,11 @@ def presets_ns(force=False):
         return _NS_CACHE
     ns = None
     try:
-        from . import presets as _p
+        import importlib as _il
+        _p = _il.import_module(".presets", __package__.rsplit(".", 1)[0]) \
+            if __package__ and "." in __package__ else None
+        if _p is None:
+            from . import presets as _p
         ns = _p.__dict__
     except Exception:
         txt = bpy.data.texts.get("PLNT_presets.py")
@@ -1234,8 +1238,12 @@ class PLNT_OT_apply_shot(_Base):
 
     def execute(self, context):
         try:
-            from . import shots as _s
-        except ImportError:
+            import importlib as _il
+            _s = _il.import_module(".shots", __package__.rsplit(".", 1)[0]) \
+                if __package__ and "." in __package__ else None
+            if _s is None:
+                from . import shots as _s
+        except Exception:
             self.report({'ERROR'}, "Shot definitions not available")
             return {'CANCELLED'}
         p = props(context)
