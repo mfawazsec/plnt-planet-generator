@@ -298,11 +298,18 @@ P["gas_giant"] = dict(
     # gas giants read through their cloud deck: heavy banding, full coverage
     # Zones pale, belts dark: the colour alternation is the planet, and
     # coverage is pulled off the ceiling so the bands have somewhere to end.
-    clouds={"Cloud Coverage": 0.92, "Cloud Density": 2.4, "Band Strength": 1.0,
-            "Detail Scale": 0.55, "Cloud Colour": (0.88, 0.78, 0.62, 1),
-            "Belt Contrast": 0.88, "Belt Frequency": 23.0,
-            "Belt Colour": (0.40, 0.26, 0.17, 1)},
-    atmo={"Density": 0.0658, "Atmo Colour": (0.62, 0.50, 0.34, 1), "Falloff": 2.2, "Pollution": 0.0},
+    # Colour comes off Juno imagery rather than off the memory of a textbook
+    # illustration: the zones are pale and faintly BLUE, not cream, and the
+    # belts are rust. Putting a warm cream against a warm brown is what made
+    # this planet one colour with stripes in it.
+    clouds={"Cloud Coverage": 0.96, "Cloud Density": 2.4, "Band Strength": 1.0,
+            "Detail Scale": 0.55, "Cloud Colour": (0.72, 0.77, 0.82, 1),
+            "Belt Contrast": 1.0, "Belt Frequency": 23.0,
+            "Belt Colour": (0.33, 0.18, 0.09, 1),
+            # Boundaries as vortex trains, convective cells across the whole
+            # disc, and a scattering of white ovals.
+            "Belt Turbulence": 0.75, "Eddy Scale": 11.0, "Storm Amount": 0.70},
+    atmo={"Density": 0.0658, "Atmo Colour": (0.56, 0.53, 0.50, 1), "Falloff": 2.2, "Pollution": 0.0},
     rings=True, orbital=0.0,
     ring={"Gap Amount": 0.52, "Band Scale": 170.0, "Ring Density": 1.45,
           "Ring Colour": (0.74, 0.70, 0.62, 1),

@@ -108,6 +108,12 @@ def build_clouds(radius=1000.0):
     sk("Belt Contrast", 'INPUT', 'NodeSocketFloat', 0.0, 0.0, 1.0)
     sk("Belt Frequency", 'INPUT', 'NodeSocketFloat', 16.0, 1.0, 60.0)
     sk("Belt Colour", 'INPUT', 'NodeSocketColor', (0.55, 0.42, 0.30, 1))
+    # Turbulence at the belt boundaries, cellular texture across the deck, and
+    # discrete storm ovals. All three default to off, so a preset that has not
+    # asked for them renders exactly as before.
+    sk("Belt Turbulence", 'INPUT', 'NodeSocketFloat', 0.0, 0.0, 1.0)
+    sk("Eddy Scale", 'INPUT', 'NodeSocketFloat', 26.0, 2.0, 160.0)
+    sk("Storm Amount", 'INPUT', 'NodeSocketFloat', 0.0, 0.0, 1.0)
     sk("BSDF", 'OUTPUT', 'NodeSocketShader')
 
     N, L = g.nodes.new, g.links.new
@@ -283,8 +289,75 @@ def build_clouds(radius=1000.0):
     bta = M('MULTIPLY', y=0.085, loc=(-800, -1120)); L(btc.outputs["Value"], bta.inputs[0])
     btz = M('ADD', loc=(-800, -1000)); L(bz.outputs["Value"], btz.inputs[0])
     L(bta.outputs["Value"], btz.inputs[1])
+    # ---------- shear turbulence on the boundaries ----------
+    #
+    # Displacing the latitude by a smooth noise gives belt edges that WAVE, and
+    # Jupiter's do not wave. Every image of the place shows the same thing: a
+    # boundary is a train of vortices, all the same handedness, each about as
+    # wide as the shear zone is deep, repeating along the jet. That is a cell
+    # structure, not a wave, and a Voronoi distance-to-edge field elongated
+    # along the flow is exactly a cell structure at that aspect ratio.
+    #
+    # Two things make it read as shear rather than as a pattern. It is gated to
+    # the boundaries -- a curl in the middle of a zone is just a blob -- and
+    # the gate is computed from the UNDISPLACED sine, because a gate taken from
+    # the displaced one would be chasing its own tail.
+    bfq0 = M('MULTIPLY', loc=(-740, -1320), nm="belt phase (clean)")
+    L(btz.outputs["Value"], bfq0.inputs[0])
+    L(gi.outputs["Belt Frequency"], bfq0.inputs[1])
+    bsin0 = M('SINE', loc=(-640, -1320), nm="belts (clean)")
+    L(bfq0.outputs["Value"], bsin0.inputs[0])
+    babs = M('ABSOLUTE', loc=(-560, -1320))
+    L(bsin0.outputs["Value"], babs.inputs[0])
+    # 0.62 kept the turbulence in a thin fringe right on the boundary, and a
+    # belt is turbulent most of the way across, not just at its hem. 0.95
+    # reaches nearly to the middle of each band and still falls off, so the
+    # centres of the zones stay calm the way they do on the real planet.
+    egate = MR((-460, -1320), 0.0, 0.95, 1.0, 0.0, "edge gate")
+    egate.interpolation_type = 'SMOOTHSTEP'
+    L(babs.outputs["Value"], egate.inputs[0])
+
+    def VOR(loc, feature, nm):
+        n = N("ShaderNodeTexVoronoi"); n.location = loc; n.label = nm
+        n.voronoi_dimensions = '4D'
+        n.feature = feature
+        n.inputs["Randomness"].default_value = 1.0
+        return n
+
+    def SHEAR(src, loc, zmul, nm):
+        n = N("ShaderNodeVectorMath"); n.operation = 'MULTIPLY'
+        n.location = loc; n.label = nm
+        L(src, n.inputs[0])
+        n.inputs[1].default_value = (1.0, 1.0, zmul)
+        return n
+
+    # Squashing latitude by 3.2 before the Voronoi stretches every cell to
+    # roughly three times as wide as it is deep, which is the aspect a curl
+    # train actually has: the jet shears the eddies out along itself.
+    esh = SHEAR(Pw.outputs["Vector"], (-1100, -1480), 3.2, "eddy shear")
+    evor = VOR((-920, -1480), 'DISTANCE_TO_EDGE', "curl train")
+    L(esh.outputs["Vector"], evor.inputs["Vector"])
+    L(w3, evor.inputs["W"])
+    L(gi.outputs["Eddy Scale"], evor.inputs["Scale"])
+    ectr = M('SUBTRACT', y=0.22, loc=(-740, -1480), nm="eddy centred")
+    L(evor.outputs["Distance"], ectr.inputs[0])
+    # These two numbers trade against each other and the first pass got both
+    # wrong: small cells with a large displacement average out into torn-paper
+    # static rather than curls. A curl has to be a substantial fraction of the
+    # band's own width to read as one, so the cells are coarse and the
+    # displacement is small.
+    eamp = M('MULTIPLY', y=0.16, loc=(-640, -1480), nm="eddy depth")
+    L(ectr.outputs["Value"], eamp.inputs[0])
+    egt = M('MULTIPLY', loc=(-540, -1480), nm="eddy at edges")
+    L(eamp.outputs["Value"], egt.inputs[0]); L(egate.outputs["Result"], egt.inputs[1])
+    eamt = M('MULTIPLY', loc=(-440, -1480), nm="eddy amount")
+    L(egt.outputs["Value"], eamt.inputs[0])
+    L(gi.outputs["Belt Turbulence"], eamt.inputs[1])
+    btz2 = M('ADD', loc=(-340, -1420), nm="belt lat + eddies")
+    L(btz.outputs["Value"], btz2.inputs[0]); L(eamt.outputs["Value"], btz2.inputs[1])
+
     bfq = M('MULTIPLY', loc=(-740, -1060), nm="belt phase")
-    L(btz.outputs["Value"], bfq.inputs[0]); L(gi.outputs["Belt Frequency"], bfq.inputs[1])
+    L(btz2.outputs["Value"], bfq.inputs[0]); L(gi.outputs["Belt Frequency"], bfq.inputs[1])
     bsin = M('SINE', loc=(-560, -1000), nm="belts")
     L(bfq.outputs["Value"], bsin.inputs[0])
     # -1..1 -> 0..1 with a smoothstep edge: belts have soft shear boundaries,
@@ -302,12 +375,45 @@ def build_clouds(radius=1000.0):
     L(bz.outputs["Value"], bvc.inputs[2])
     L(bvc.outputs["Vector"], bvn.inputs["Vector"])
     L(w2, bvn.inputs["W"])
-    bvr = MR((-380, -1200), 0.25, 0.75, 0.45, 1.0, "belt spread")
+    # 0.45 at the weak end meant the palest belts only ever got 45% of the way
+    # to Belt Colour, so a "dark" belt rendered tan whatever colour it was
+    # given. The spread is still there; it just starts from somewhere the eye
+    # can read as a belt.
+    bvr = MR((-380, -1200), 0.25, 0.75, 0.60, 1.0, "belt spread")
     L(bvn.outputs["Factor"], bvr.inputs[0])
     bsh = M('MULTIPLY', loc=(-290, -1100), nm="belt shaped")
     L(bnorm.outputs["Result"], bsh.inputs[0]); L(bvr.outputs["Result"], bsh.inputs[1])
+
+    # The foam. Every close image of Jupiter shows the whole disc covered in
+    # small cells, inside the zones as much as the belts -- it is convection,
+    # and it does not stop at a boundary. A second Voronoi, finer and less
+    # elongated, added to the mix factor rather than multiplied into it, so it
+    # survives where the belt strength is zero.
+    msh = SHEAR(Pw2.outputs["Vector"], (-740, -1620), 1.7, "mottle shear")
+    mvor = VOR((-560, -1620), 'F1', "convective cells")
+    L(msh.outputs["Vector"], mvor.inputs["Vector"])
+    L(w4, mvor.inputs["W"])
+    msc = M('MULTIPLY', y=1.3, loc=(-740, -1700), nm="mottle scale")
+    L(gi.outputs["Eddy Scale"], msc.inputs[0])
+    L(msc.outputs["Value"], mvor.inputs["Scale"])
+    mctr = MR((-440, -1620), 0.0, 0.55, -0.30, 0.30, "mottle signed")
+    L(mvor.outputs["Distance"], mctr.inputs[0])
+    # Uniform foam is a texture; patchy foam is weather. Modulating the cell
+    # field by the macro flow means the convection is vigorous in some regions
+    # and nearly absent in others, which is the difference between a rendered
+    # surface and a photographed one.
+    mpat = MR((-360, -1700), 0.35, 0.75, 0.25, 1.0, "convection patchiness")
+    L(b1.outputs["Factor"], mpat.inputs[0])
+    mpm = M('MULTIPLY', loc=(-360, -1620), nm="mottle patchy")
+    L(mctr.outputs["Result"], mpm.inputs[0]); L(mpat.outputs["Result"], mpm.inputs[1])
+    mamt = M('MULTIPLY', loc=(-300, -1620), nm="mottle amount")
+    L(mpm.outputs["Value"], mamt.inputs[0])
+    L(gi.outputs["Belt Turbulence"], mamt.inputs[1])
+    bmix = M('ADD', loc=(-250, -1000), nm="belt + foam")
+    L(bsh.outputs["Value"], bmix.inputs[0]); L(mamt.outputs["Value"], bmix.inputs[1])
+
     bamt = M('MULTIPLY', loc=(-200, -1000), nm="belt amount", clamp=True)
-    L(bsh.outputs["Value"], bamt.inputs[0])
+    L(bmix.outputs["Value"], bamt.inputs[0])
     L(gi.outputs["Belt Contrast"], bamt.inputs[1])
     bcol = N("ShaderNodeMix"); bcol.data_type = 'RGBA'
     bcol.location = (-20, -1000); bcol.label = "belt colour"
@@ -315,11 +421,54 @@ def build_clouds(radius=1000.0):
     L(gi.outputs["Cloud Colour"], bcol.inputs[6])
     L(gi.outputs["Belt Colour"], bcol.inputs[7])
 
+    # ---------- storm ovals ----------
+    #
+    # The white ovals are not noise: they are a handful of discrete, long-lived
+    # anticyclones, round, brighter than anything around them, and they sit at
+    # particular latitudes rather than scattered anywhere. So: one cell per
+    # candidate site, a per-cell random that admits about one site in twelve,
+    # and the cell's own distance field shaping a disc rather than a blob. The
+    # coordinates are squashed in latitude so an oval is wider than it is tall,
+    # which is what rotation does to a vortex on a fast-spinning planet.
+    ssh = SHEAR(Pw.outputs["Vector"], (-740, -1800), 2.2, "oval shear")
+    svor = VOR((-560, -1800), 'F1', "storm sites")
+    L(ssh.outputs["Vector"], svor.inputs["Vector"])
+    L(w2, svor.inputs["W"])
+    ssc = M('MULTIPLY', y=0.55, loc=(-740, -1880), nm="oval scale")
+    L(gi.outputs["Eddy Scale"], ssc.inputs[0])
+    L(ssc.outputs["Value"], svor.inputs["Scale"])
+    spick = N("ShaderNodeSeparateXYZ"); spick.location = (-440, -1880)
+    L(svor.outputs["Color"], spick.inputs["Vector"])
+    # Jupiter has a handful of white ovals, not a rash of them. One site in
+    # thirty, with a wider profile, gives a few discrete storms instead of
+    # speckle.
+    ssel = MR((-340, -1880), 0.955, 0.985, 0.0, 1.0, "one site in thirty")
+    ssel.interpolation_type = 'SMOOTHSTEP'
+    L(spick.outputs["X"], ssel.inputs[0])
+    sdisc = MR((-340, -1800), 0.0, 0.58, 1.0, 0.0, "oval profile")
+    sdisc.interpolation_type = 'SMOOTHSTEP'
+    L(svor.outputs["Distance"], sdisc.inputs[0])
+    sm1 = M('MULTIPLY', loc=(-240, -1840), nm="oval mask")
+    L(ssel.outputs["Result"], sm1.inputs[0]); L(sdisc.outputs["Result"], sm1.inputs[1])
+    # A white oval on a white zone is not an oval. They go in the belts, where
+    # they are the brightest thing for a long way and where the real ones
+    # mostly sit, so the belt shape gates them.
+    sinb = M('MULTIPLY', loc=(-190, -1900), nm="ovals in belts")
+    L(sm1.outputs["Value"], sinb.inputs[0]); L(bnorm.outputs["Result"], sinb.inputs[1])
+    samt = M('MULTIPLY', loc=(-140, -1840), nm="oval amount", clamp=True)
+    L(sinb.outputs["Value"], samt.inputs[0])
+    L(gi.outputs["Storm Amount"], samt.inputs[1])
+    scol = N("ShaderNodeMix"); scol.data_type = 'RGBA'
+    scol.location = (80, -1000); scol.label = "storm ovals"
+    L(samt.outputs["Value"], scol.inputs[0])
+    L(bcol.outputs[2], scol.inputs[6])
+    scol.inputs[7].default_value = (1.0, 0.985, 0.955, 1.0)
+
     # Translucent + Diffuse gives forward glow at the terminator plus body
     tr = N("ShaderNodeBsdfTranslucent"); tr.location = (60, 180)
-    L(bcol.outputs[2], tr.inputs["Color"])
+    L(scol.outputs[2], tr.inputs["Color"])
     df = N("ShaderNodeBsdfDiffuse"); df.location = (60, 20)
-    L(bcol.outputs[2], df.inputs["Color"])
+    L(scol.outputs[2], df.inputs["Color"])
     df.inputs["Roughness"].default_value = 0.6
     L(bump.outputs["Normal"], df.inputs["Normal"])
     body = N("ShaderNodeMixShader"); body.location = (300, 100)
