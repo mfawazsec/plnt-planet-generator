@@ -442,6 +442,56 @@ def _quality_update(self, context):
         pass
 
 
+def _sun_body_mod():
+    try:
+        from . import sun_body as _sb
+    except ImportError:
+        import sun_body as _sb
+    return _sb
+
+
+def _sun_node(label):
+    """Find a node in the sun material by its label, or None."""
+    mat = bpy.data.materials.get("PLNT_SunSurface")
+    if not mat or not mat.node_tree:
+        return None
+    for n in mat.node_tree.nodes:
+        if n.label == label:
+            return n
+    return None
+
+
+def _sun_look_update(self, context):
+    """Poke the sun material in place.
+
+    Rebuilding the whole shader on every slider drag would drop the material
+    off the object and re-link it each time, which is both slow and a good way
+    to lose a manual tweak. Every control here maps to one input on one node.
+    """
+    targets = (("brightness", 1, self.sun_brightness),
+               ("granule scale", 0, self.sun_granule_scale),
+               ("spot amount", 1, self.sun_spot_amount),
+               ("u(1-mu)", 1, self.sun_limb_darkening))
+    for label, idx, val in targets:
+        n = _sun_node(label)
+        if n:
+            n.inputs[idx].default_value = val
+    t = _sun_node("sun tint")
+    if t:
+        t.inputs[7].default_value = tuple(self.sun_tint) + (1.0,)
+
+
+def _sun_scale_update(self, context):
+    """Size changes are geometry, so this one really does rebuild."""
+    sb = _sun_body_mod()
+    if sb.exists():
+        try:
+            sb.build(scale=self.sun_scale)
+        except RuntimeError:
+            return
+        _sun_look_update(self, context)
+
+
 def _performance_update(self, context):
     try:
         _render_mod().apply_performance(self.performance, context.scene)
@@ -490,6 +540,34 @@ class PLNT_Props(bpy.types.PropertyGroup):
                ('ADVANCED', "Advanced", "Everything with an artistic effect"),
                ('ALL', "All", "Including values kept in sync automatically")],
         description="How many controls to show")
+    sun_brightness: bpy.props.FloatProperty(
+        name="Brightness", default=2.4, min=0.0, max=40.0, update=_sun_look_update,
+        description="Emission strength of the star. Past about 4 the disc "
+                    "clips to flat white and the surface detail goes with it")
+    sun_tint: bpy.props.FloatVectorProperty(
+        name="Tint", subtype='COLOR', size=3, default=(1.0, 1.0, 1.0),
+        min=0.0, max=2.0, update=_sun_look_update,
+        description="Multiplies the photosphere colour. White leaves the "
+                    "measured white-yellow-orange progression alone")
+    sun_scale: bpy.props.FloatProperty(
+        name="Size", default=1.0, min=0.2, max=40.0, update=_sun_scale_update,
+        description="Multiple of the true angular diameter. 1.0 is correct and "
+                    "is about eight pixels in a 1080p frame on a 40mm lens; "
+                    "anything larger is a deliberate lie about scale")
+    sun_granule_scale: bpy.props.FloatProperty(
+        name="Granule Scale", default=105.0, min=8.0, max=600.0,
+        update=_sun_look_update,
+        description="Convection cells across the star. Higher is finer, and "
+                    "past a few hundred they fall below a pixel and average out")
+    sun_spot_amount: bpy.props.FloatProperty(
+        name="Sunspots", default=0.85, min=0.0, max=1.0, update=_sun_look_update,
+        description="How dark the spot groups go. They are sparse by design, "
+                    "so a given face of the star may show none")
+    sun_limb_darkening: bpy.props.FloatProperty(
+        name="Limb Darkening", default=0.62, min=0.0, max=1.0,
+        update=_sun_look_update,
+        description="The u in I(mu)/I(1) = 1 - u(1 - mu). At 0 the star is a "
+                    "flat bright circle, which is the clearest tell of a fake")
     search: bpy.props.StringProperty(
         name="Search", options={'TEXTEDIT_UPDATE'},
         description="Filter every panel by parameter name. Overrides the "
@@ -747,7 +825,17 @@ class PLNT_PT_sky(bpy.types.Panel):
             box.label(text="Physical Sun", icon='LIGHT_SUN')
             if _sb.exists():
                 box.label(text="In scene, %.3f deg across"
-                          % _sb.ANGULAR_DIAMETER_DEG, icon='CHECKMARK')
+                          % (_sb.ANGULAR_DIAMETER_DEG * p.sun_scale),
+                          icon='CHECKMARK')
+                c = box.column(align=True)
+                c.use_property_split = True
+                c.prop(p, "sun_brightness")
+                c.prop(p, "sun_tint")
+                c.prop(p, "sun_scale")
+                c.separator()
+                c.prop(p, "sun_granule_scale")
+                c.prop(p, "sun_spot_amount")
+                c.prop(p, "sun_limb_darkening")
                 box.operator("plnt.remove_sun_body", icon='X')
             else:
                 box.label(text="Sun lamp only: nothing to photograph")

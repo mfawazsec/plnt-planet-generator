@@ -32,10 +32,14 @@ ANGULAR_DIAMETER_DEG = 0.526                # the Sun's, from Earth
 ANGULAR_DIAMETER = math.radians(ANGULAR_DIAMETER_DEG)
 
 DEFAULTS = {
-    "Brightness": 38.0,
+    # 38 clipped the whole disc to flat white under AgX and took every scrap of
+    # surface detail with it. Around 2 keeps the core reading as white while
+    # the limb still falls away through yellow into orange.
+    "Brightness": 2.4,
     "Granule Scale": 105.0,
     "Spot Amount": 0.85,
     "Limb Darkening": 0.62,
+    "Tint": (1.0, 1.0, 1.0, 1.0),
 }
 
 
@@ -205,20 +209,36 @@ def build_material(name=MAT, look=None):
     # ---- colour -----------------------------------------------------------
     # Ramp anchored on a measurement of SDO HMI continuum imagery, whose mean
     # sits at roughly (1.00, 0.72, 0.04) once limb darkening is divided out.
+    # Ramp measured off the reference trailer's own star rather than guessed.
+    # Sampling that frame by luminance band gives a clear progression: a
+    # neutral white core, yellow just below it, orange through the midtones and
+    # a deep orange halo at the edge -- r/g climbing 1.00, 1.00, 1.31, 1.59 as
+    # b/g falls 1.00, 0.77, 0.60, 0.57. The stops below are those measurements.
     ramp = N("ShaderNodeValToRGB"); ramp.location = (60, 0); ramp.label = "photosphere"
     e = ramp.color_ramp.elements
     e[0].position = 0.0
-    e[0].color = (0.22, 0.035, 0.004, 1.0)       # umbra
-    e[1].position = 0.45
-    e[1].color = (1.0, 0.42, 0.03, 1.0)          # penumbra / lanes
-    m = ramp.color_ramp.elements.new(0.78)
-    m.color = (1.0, 0.74, 0.14, 1.0)             # quiet photosphere
+    e[0].color = (0.26, 0.055, 0.010, 1.0)       # umbra
+    e[1].position = 0.34
+    e[1].color = (0.85, 0.436, 0.242, 1.0)       # deep limb, r/g 1.59
+    m1 = ramp.color_ramp.elements.new(0.62)
+    m1.color = (0.958, 0.734, 0.438, 1.0)        # midtone orange, r/g 1.31
+    m2 = ramp.color_ramp.elements.new(0.86)
+    m2.color = (0.983, 0.980, 0.757, 1.0)        # yellow-white, b/g 0.77
     hi = ramp.color_ramp.elements.new(1.0)
-    hi.color = (1.0, 0.95, 0.74, 1.0)            # granule centres
+    hi.color = (0.984, 0.985, 0.982, 1.0)        # neutral core
     L(lit.outputs[0], ramp.inputs["Fac"])
 
+    # Tint sits after the ramp so the UI can warm or cool the whole star
+    # without disturbing the measured progression across it.
+    tint = N("ShaderNodeMix"); tint.data_type = 'RGBA'
+    tint.blend_type = 'MULTIPLY'
+    tint.location = (220, 0); tint.label = "sun tint"
+    tint.inputs[0].default_value = 1.0
+    tint.inputs[7].default_value = v["Tint"]
+    L(ramp.outputs["Color"], tint.inputs[6])
+
     em = N("ShaderNodeEmission"); em.location = (360, 0)
-    L(ramp.outputs["Color"], em.inputs["Color"])
+    L(tint.outputs[2], em.inputs["Color"])
     bright = M('MULTIPLY', v["Brightness"], (360, -200), "brightness")
     L(lit.outputs[0], bright.inputs[0])
     L(bright.outputs[0], em.inputs["Strength"])
