@@ -204,7 +204,15 @@ def build_clouds(radius=1000.0):
     bs_inv = M('SUBTRACT', x=1.0, loc=(-880, 60)); L(gi.outputs["Band Strength"], bs_inv.inputs[1])
     t1 = M('MULTIPLY', loc=(-880, 700)); L(b1.outputs["Factor"], t1.inputs[0]); L(gi.outputs["Band Strength"], t1.inputs[1])
     t2a = M('MULTIPLY', y=0.55, loc=(-880, 460)); L(b2.outputs["Factor"], t2a.inputs[0])
-    t2 = M('MULTIPLY', loc=(-700, 460)); L(t2a.outputs["Value"], t2.inputs[0]); L(bs_inv.outputs["Value"], t2.inputs[1])
+    # Band Strength 1.0 zeroed bs_inv and with it the entire mid octave, so the
+    # presets that most want banding -- the gas giants -- were also the ones
+    # rendering with no cumulus structure at all, and their belts came out as
+    # smooth painted stripes. A floor keeps a quarter of the mid octave alive
+    # at full band strength, which is what puts turbulence inside the belts
+    # rather than only along their edges.
+    bsf = M('MAXIMUM', y=0.26, loc=(-880, 300), nm="detail floor")
+    L(bs_inv.outputs["Value"], bsf.inputs[0])
+    t2 = M('MULTIPLY', loc=(-700, 460)); L(t2a.outputs["Value"], t2.inputs[0]); L(bsf.outputs["Value"], t2.inputs[1])
     t3 = M('MULTIPLY', y=0.05, loc=(-880, 220)); L(b3.outputs["Factor"], t3.inputs[0])
     s1 = M('ADD', loc=(-520, 600)); L(t1.outputs["Value"], s1.inputs[0]); L(t2.outputs["Value"], s1.inputs[1])
     s2 = M('ADD', loc=(-340, 600)); L(s1.outputs["Value"], s2.inputs[0]); L(t3.outputs["Value"], s2.inputs[1])
