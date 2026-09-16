@@ -71,15 +71,15 @@ LOOK_IN = [
     ("Ice Brightness", 'NodeSocketFloat', 0.80, 0.0, 2.0),
     ("Ocean Shallow", 'NodeSocketColor', (0.045, 0.215, 0.275, 1), None, None),
     ("Ocean Deep", 'NodeSocketColor', (0.0035, 0.014, 0.040, 1), None, None),
-    ("Shelf Boost", 'NodeSocketFloat', 1.10, 0.0, 4.0),
+    ("Shelf Boost", 'NodeSocketFloat', 0.37, 0.0, 4.0),
     ("Slope Rock Threshold", 'NodeSocketFloat', 0.26, 0.0, 1.0),
     ("Vegetation Amount", 'NodeSocketFloat', 1.0, 0.0, 2.0),
     ("Ice Temp Threshold", 'NodeSocketFloat', 0.20, 0.0, 1.0),
     ("River Tint", 'NodeSocketFloat', 0.30, 0.0, 2.0),
     ("Patchiness", 'NodeSocketFloat', 0.35, 0.0, 1.0),
     ("Lava Emission", 'NodeSocketFloat', 0.0, 0.0, 40.0),
-    ("Micro Disp Height", 'NodeSocketFloat', 2.2, 0.0, 200.0),
-    ("Micro Disp Scale", 'NodeSocketFloat', 145.0, 1.0, 6000.0),
+    ("Micro Disp Height", 'NodeSocketFloat', 0.35, 0.0, 200.0),
+    ("Micro Disp Scale", 'NodeSocketFloat', 300.0, 1.0, 6000.0),
 ]
 
 FIELD_DEFAULTS = {
@@ -111,7 +111,7 @@ def build_surface(name="PLNT_SurfaceShader", sun_dir_obj=None, pos_attr=None):
     for p in FIELD_PARAMS:
         dv, mn, mx = FIELD_DEFAULTS[p]
         sk(p, 'INPUT', 'NodeSocketFloat', dv, mn, mx)
-    sk("Relief Strength", 'INPUT', 'NodeSocketFloat', 70.0, 0.0, 400.0)
+    sk("Relief Strength", 'INPUT', 'NodeSocketFloat', 23.0, 0.0, 400.0)
     for n, st, dv, mn, mx in LOOK_IN:
         sk(n, 'INPUT', st, dv, mn, mx)
     TECH = _tech()
