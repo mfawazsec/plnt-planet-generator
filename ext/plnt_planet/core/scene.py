@@ -524,17 +524,6 @@ def build_scene_scaffold(preset="earthlike", seed=2291, radius=RADIUS,
     except Exception as ex:
         steps["motion_error"] = str(ex)[:160]
 
-    # Post. A scene that renders correctly and grades itself is the unit of
-    # work people actually want; leaving the grade to whoever opens the file
-    # means every frame that leaves this project looks like a test render.
-    try:
-        from . import compositing as _cp
-    except ImportError:
-        _cp = _load_flat("compositing", os.path.join(directory, "core"))
-    try:
-        steps["compositing"] = _cp.attach()
-    except Exception as ex:
-        steps["compositing_error"] = str(ex)[:160]
     return steps
 
 

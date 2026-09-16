@@ -7,8 +7,8 @@ therefore had nothing to point at.
 
 This adds the body. It is a real sphere at a real angular size, so it behaves
 like the star it represents rather than like a sprite: it is occluded by the
-planet, it is the right size in every lens, and the compositing glare keys off
-it the way it keys off any other blown-out highlight.
+planet, it is the right size in every lens, and it blows out the way any other
+very bright, very small subject does.
 
 Detail is procedural, and deliberately so. The obvious route is a photograph of
 the Sun, and the obvious source is SDO's public-domain imagery, but the browse

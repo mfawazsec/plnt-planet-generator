@@ -19,7 +19,7 @@ CORE = os.path.join(EXT, "core")
 
 CORE_MODULES = ["nodeutil", "params", "ui", "lod", "render", "rings", "orbital",
                 "mega", "atmosphere", "surface_detail", "scene", "gen_groups",
-                "anim", "compositing", "sun_body"]
+                "anim", "sun_body"]
 # transitional flat modules that become package submodules
 FLAT = {"plnt_field": "field", "plnt_surface": "surface", "plnt_tech": "tech",
         "plnt_atmos": "atmos", "plnt_patch": "patch", "plnt_shots": "shots",
