@@ -58,7 +58,47 @@ LOOK = {
     # Sensor floor. High enough to break up denoiser flatness in the dark
     # sky, low enough that a still frame does not look dirty.
     "grain": 0.012,
+    # Neutral by default: the plugin should hand people their render, not a
+    # house grade they then have to undo.
+    "saturation": 1.0,
+    "contrast": 0.0,
+    "black_point": 0.0,
 }
+
+# The delivery grade, measured off the reference trailer rather than dialled in
+# by eye. Sampling every sampled frame of it gives a picture that is much
+# darker and much more contrasted than a neutral render: a quarter of all
+# pixels sit below 0.06, the median lands at 0.18, and yet 4.7% are up against
+# clipping. Mean saturation is 0.45.
+#
+# It is also warm the whole way up -- shadows at r/g 1.54 and b/g 0.70, mids at
+# 1.40 and 0.86, highlights at 1.07 and 0.89. That is worth reading carefully
+# before copying: much of it is the reference's own subject matter, which is
+# full of fire and Mars and red nebula, rather than a grade applied on top. Ours
+# is mostly blue and grey worlds against black, and pushing shadows to r/g 1.54
+# would tint empty space amber. So the structure here is matched -- crushed
+# blacks, hard contrast, strong halation, lifted saturation -- and the warmth
+# is applied at about a third of the measured strength.
+FILM = dict(LOOK)
+FILM.update({
+    "bloom_threshold": 0.78,
+    "bloom_strength": 0.26,
+    "bloom_size": 9,
+    "streak_threshold": 5.00,
+    "streak_strength": 0.022,
+    "lift": (1.012, 0.998, 0.984, 1.0),
+    "gain": (1.035, 1.000, 0.958, 1.0),
+    "dispersion": 0.018,
+    "vignette_start": 0.52,
+    "vignette_end": 1.38,
+    "vignette_depth": 0.62,
+    "grain": 0.015,
+    "saturation": 1.18,
+    "contrast": 0.14,
+    "black_point": 0.012,
+})
+
+LOOKS = {"default": LOOK, "film": FILM}
 
 
 def _mix(g, blend, loc, label=""):
@@ -72,10 +112,16 @@ def _mix(g, blend, loc, label=""):
 
 
 def build(look=None):
-    """Create (or rebuild) the compositing group. Returns the node group."""
-    v = dict(LOOK)
-    if look:
-        v.update(look)
+    """Create (or rebuild) the compositing group. Returns the node group.
+
+    `look` is a name from LOOKS, or a dict of overrides on top of the default.
+    """
+    if isinstance(look, str):
+        v = dict(LOOKS[look])
+    else:
+        v = dict(LOOK)
+        if look:
+            v.update(look)
 
     old = bpy.data.node_groups.get(GROUP)
     if old:
@@ -128,12 +174,26 @@ def build(look=None):
     setcol("Gain", v["gain"])
     L(streak.outputs["Image"], cb.inputs["Image"])
 
+    # ---- saturation and contrast -------------------------------------------
+    # Separate from the lift/gamma/gain above because they do different jobs:
+    # the balance decides what colour each zone is, these decide how far apart
+    # the zones sit. Both are no-ops at the plugin's defaults.
+    sat = N("CompositorNodeHueSat"); sat.location = (-520, 0); sat.label = "saturation"
+    sat.inputs["Saturation"].default_value = v["saturation"]
+    L(cb.outputs["Image"], sat.inputs["Image"])
+
+    bc = N("CompositorNodeBrightContrast"); bc.location = (-460, 0)
+    bc.label = "contrast"
+    bc.inputs["Bright"].default_value = -v["black_point"]
+    bc.inputs["Contrast"].default_value = v["contrast"]
+    L(sat.outputs["Image"], bc.inputs["Image"])
+
     # ---- lens --------------------------------------------------------------
     ld = N("CompositorNodeLensdist"); ld.location = (-400, 0)
     ld.label = "dispersion"
     ld.inputs["Distortion"].default_value = 0.0
     ld.inputs["Dispersion"].default_value = v["dispersion"]
-    L(cb.outputs["Image"], ld.inputs["Image"])
+    L(bc.outputs["Image"], ld.inputs["Image"])
 
     # ---- vignette ----------------------------------------------------------
     ic = N("CompositorNodeImageCoordinates"); ic.location = (-1150, -400)
@@ -182,7 +242,10 @@ def build(look=None):
 
 
 def attach(scene=None, look=None, rebuild=True):
-    """Build the group if needed and hand it to the scene."""
+    """Build the group if needed and hand it to the scene.
+
+    `look` takes a LOOKS name ("default", "film") or a dict of overrides.
+    """
     sc = scene or bpy.context.scene
     g = bpy.data.node_groups.get(GROUP)
     if g is None or rebuild:
