@@ -273,8 +273,32 @@ def _finish_surface(g, C):
     L(C["P"], capprox.inputs[0]); L(sockout(step, "Vector"), capprox.inputs[1])
     pn = VM('NORMALIZE', (-2200, -1160))
     L(sockout(capprox, "Vector"), pn.inputs[0])
+    # ...but only for rays that MISS the planet.
+    #
+    # A ray aimed near the middle of the disc has its perpendicular foot at
+    # the planet centre, so C collapses to (0,0,0) and normalising it returns
+    # zero. A zero sun dot lands mid-ramp on the terminator smoothstep, which
+    # means the entire disc was lit at roughly 40% regardless of where the sun
+    # actually was. On a day-side framing nobody notices; on a night-side one
+    # the atmosphere became a pale veil over the whole hemisphere, washing out
+    # city lights, lava and anything else the dark side was there to show.
+    #
+    # Those rays never see the far limb anyway: they are stopped by the
+    # surface, so all they cross is the air column in front of it, and the
+    # shell hit point P is the honest place to ask whether that column is in
+    # sunlight. LIM is already 1 exactly when the ray is blocked and 0 when it
+    # grazes past, so the geometry has handed us the blend for free.
+    pnP = VM('NORMALIZE', (-2200, -1320))
+    L(C["P"], pnP.inputs[0])
+    sampv = N("ShaderNodeMix"); sampv.data_type = 'VECTOR'
+    sampv.location = (-2100, -1240); sampv.label = "illum sample"
+    L(C["LIM"], sampv.inputs[0])
+    L(sockout(pn, "Vector"), sampv.inputs[4])
+    L(sockout(pnP, "Vector"), sampv.inputs[5])
+    sampn = VM('NORMALIZE', (-2060, -1160))
+    L(sampv.outputs[1], sampn.inputs[0])
     lam = VM('DOT_PRODUCT', (-2020, -1080), "sun dot")
-    L(sockout(pn, "Vector"), lam.inputs[0]); L(SUN, lam.inputs[1])
+    L(sockout(sampn, "Vector"), lam.inputs[0]); L(SUN, lam.inputs[1])
     # soft terminator: the day/night edge on air is gradual, not a hard line.
     # Narrower than the original -0.35..0.30 now that the sun angle is sampled
     # at a point that moves smoothly. The wide ramp was compensating for a
