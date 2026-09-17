@@ -17,9 +17,11 @@ Thirty-three seconds, twenty-four shots, every frame rendered in Cycles from
 this add-on. No textures, no sculpting, no external assets except the station
 in the second shot.
 
-[![PLNT showcase video](docs/media/video_poster.jpg)](https://github.com/mfawazsec/plnt-planet-generator/raw/main/docs/media/plnt-showcase.mp4)
+[![PLNT showcase video](docs/media/video_poster.jpg)](https://youtu.be/0ByisfJl65Y)
 
-*Click to play (4.6 MB, 720p). The 1440p master is not in the repository.*
+*Watch on YouTube in 1440p. A 720p copy is in this repository at
+[`docs/media/plnt-showcase.mp4`](docs/media/plnt-showcase.mp4) for anyone
+reading offline.*
 
 ---
 
