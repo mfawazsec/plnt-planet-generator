@@ -197,12 +197,23 @@ def ocean_glint(tree, B, S, P):
     comb = B.M('MULTIPLY', label="glint mix")
     B.L(sockout(wind, "Fac"), comb.inputs[0])
     B.L(sockout(slick, "Fac"), comb.inputs[1])
-    # 0.08 to 0.14 was too wide. At that roughness the GGX lobe integrates
-    # across several diced micropolygons of the adaptive-subdivision cage, and
-    # the facet boundaries show up inside the sun glint as a hexagonal lattice.
-    # 0.05 to 0.095, with the wave normals below to carry the glitter, keeps
-    # the highlight a sheet of light without sampling the dicing grid.
-    rng = B.MR(0.12, 0.72, 0.050, 0.095, "glint roughness")
+    # 0.05 to 0.095 is a mirror, and the sea is not one. Cox and Munk measured
+    # the slope distribution of the ocean surface from sun glitter in 1954: an
+    # RMS slope around 0.1 to 0.2 radians at moderate wind, which is a GGX
+    # roughness in the region of 0.2 to 0.4, not 0.07. The difference is
+    # visible and it is not subtle -- at 0.07 a bright object above the water
+    # reflects as a recognisable IMAGE of itself, so an orbital structure
+    # appeared mirrored on the night side complete with its window cutouts,
+    # which is a thing no ocean has ever done. A real sea scatters it into a
+    # glitter path.
+    #
+    # The range below is still conservative against that measurement, because
+    # the wave normals underneath carry part of the spread and because a wider
+    # lobe integrates across more of the adaptive-subdivision cage -- which is
+    # what put a hexagonal lattice inside the glint the first time this was
+    # widened. That artefact is a tessellation problem: the shots that live on
+    # their glint dice finer rather than accepting a mirror.
+    rng = B.MR(0.12, 0.72, 0.105, 0.265, "glint roughness")
     B.L(comb.outputs[0], rng.inputs[0])
     # blend from the shipped constant so Glint Variation = 0 is unchanged
     blend = B.MR(0.0, 1.0, 0.08, 0.0, "glint blend")
@@ -409,9 +420,28 @@ def ice_cracks(tree, B, S, P, FIELD):
     glacier flow.
     """
     icecol = need(tree, "icecol")
+    # 4.2 was too much. Squashing the sample coordinate that hard turns every
+    # cell into a 4:1 ribbon running the same way over the whole planet, which
+    # reads as a stretched texture rather than as ice -- and pack ice at a
+    # margin is roughly equidimensional anyway. Flow lines belong to glaciers,
+    # not to the whole cryosphere, so the anisotropy comes down and a warp
+    # gives the remaining direction somewhere to bend.
+    warp = B.noise('3D', 'FBM', 3.0, "ice flow warp")
+    sockin(warp, "Scale").default_value = 2.4
+    B.L(P, sockin(warp, "Vector"))
+    wc = B.VM('SUBTRACT', "ice warp centred")
+    B.L(sockout(warp, "Color"), wc.inputs[0])
+    wc.inputs[1].default_value = (0.5, 0.5, 0.5)
+    ws = B.VM('SCALE', "ice warp amount")
+    B.L(sockout(wc, "Vector"), ws.inputs[0])
+    sockin(ws, "Scale").default_value = 0.16
+    pw = B.VM('ADD', "ice warped coords")
+    B.L(P, pw.inputs[0])
+    B.L(sockout(ws, "Vector"), pw.inputs[1])
+
     stretch = B.VM('MULTIPLY', "ice stretch")
-    stretch.inputs[1].default_value = (1.0, 1.0, 4.2)
-    B.L(P, stretch.inputs[0])
+    stretch.inputs[1].default_value = (1.0, 1.0, 1.9)
+    B.L(sockout(pw, "Vector"), stretch.inputs[0])
     vor = B.voronoi('4D', 'DISTANCE_TO_EDGE', "ice cracks")
     sockin(vor, "Scale").default_value = 46.0
     sockin(vor, "Randomness").default_value = 1.0
@@ -421,8 +451,20 @@ def ice_cracks(tree, B, S, P, FIELD):
     # the first place. Europa's lineae are tens of km wide on a 3000 km moon.
     edge = B.MR(0.0, 0.055, 1.0, 0.0, "crack width")
     B.L(sockout(vor, "Distance"), edge.inputs[0])
+    # A second, coarser and unstretched set: an ice sheet breaks at more than
+    # one scale, and one scale in one direction is what made the first version
+    # look like a printed pattern.
+    vor2 = B.voronoi('4D', 'DISTANCE_TO_EDGE', "ice plates")
+    sockin(vor2, "Scale").default_value = 13.0
+    sockin(vor2, "Randomness").default_value = 1.0
+    B.L(sockout(pw, "Vector"), sockin(vor2, "Vector"))
+    edge2 = B.MR(0.0, 0.030, 0.75, 0.0, "plate width")
+    B.L(sockout(vor2, "Distance"), edge2.inputs[0])
+    both = B.M('MAXIMUM', label="crack layers")
+    B.L(edge.outputs["Result"], both.inputs[0])
+    B.L(edge2.outputs["Result"], both.inputs[1])
     amt = B.M('MULTIPLY', label="crack amt")
-    B.L(edge.outputs["Result"], amt.inputs[0])
+    B.L(both.outputs[0], amt.inputs[0])
     B.L(S["Ice Crack Amount"], amt.inputs[1])
     consumers = splice(tree, icecol, 2)
     dark = B.mix("crack colour")
@@ -615,42 +657,92 @@ def craters(tree, B, S, P, FIELD):
     """
     micro = need(tree, "micro_bu")
 
-    def layer(scale_sock, scale_mul, rmin, rmax, gate, depth, tag):
+    def layer(scale_sock, scale_mul, rmin, rmax, gate, depth, tag, peak=False):
         vor = B.voronoi('4D', 'F1', "crater cells " + tag)
         sockin(vor, "Randomness").default_value = 0.85
         B.L(P, sockin(vor, "Vector"))
         if scale_mul == 1.0:
             B.L(scale_sock, sockin(vor, "Scale"))
+            cell_scale = scale_sock
         else:
             sc = B.M('MULTIPLY', y=scale_mul, label="crater scale " + tag)
             B.L(scale_sock, sc.inputs[0])
             B.L(sc.outputs[0], sockin(vor, "Scale"))
+            cell_scale = sc.outputs[0]
         d = sockout(vor, "Distance")
         sep = B.N("ShaderNodeSeparateXYZ", "crater cell rnd " + tag)
         B.L(sockout(vor, "Color"), sep.inputs["Vector"])
 
-        # Per-cell radius, then normalise the distance by it so one profile
-        # serves every size.
+        # Per-cell radius, drawn along a power law rather than uniformly.
+        # Crater counts go as roughly D^-2: small ones are not merely more
+        # common, they outnumber the large ones by orders of magnitude. Drawing
+        # the radius uniformly gave every cell a middling crater, which is why
+        # the surface read as polka dots rather than as bombardment.
+        u = B.M('POWER', y=1.6, label="crater size law " + tag)
+        B.L(sep.outputs["Y"], u.inputs[0])
         rad = B.MR(0.0, 1.0, rmin, rmax, "crater radius " + tag)
-        B.L(sep.outputs["Y"], rad.inputs[0])
-        dn = B.M('DIVIDE', label="crater d/r " + tag)
-        B.L(d, dn.inputs[0])
-        B.L(rad.outputs["Result"], dn.inputs[1])
+        B.L(u.outputs[0], rad.inputs[0])
+        dn0 = B.M('DIVIDE', label="crater d/r " + tag)
+        B.L(d, dn0.inputs[0])
+        B.L(rad.outputs["Result"], dn0.inputs[1])
 
-        bowl = B.MR(0.0, 0.78, -1.0, 0.0, "crater bowl " + tag, 'SMOOTHSTEP')
+        # Craters are not circles. An impact excavates along whatever the
+        # target rock will give it, so rims are polygonal, scalloped, and
+        # slumped on one side. Perturbing the normalised radius by a noise at a
+        # few cycles per crater makes the outline wander without moving the
+        # crater, which is the whole difference between a hole and a sticker.
+        en = B.noise('3D', 'FBM', 3.0, "crater edge " + tag)
+        B.L(P, sockin(en, "Vector"))
+        esc = B.M('MULTIPLY', y=3.6, label="crater edge scale " + tag)
+        B.L(cell_scale, esc.inputs[0])
+        B.L(esc.outputs[0], sockin(en, "Scale"))
+        ectr = B.M('SUBTRACT', y=0.5, label="crater edge centred " + tag)
+        B.L(sockout(en, "Fac"), ectr.inputs[0])
+        eamt = B.M('MULTIPLY', y=0.30, label="crater edge amount " + tag)
+        B.L(ectr.outputs[0], eamt.inputs[0])
+        eone = B.M('ADD', x=1.0, label="crater edge warp " + tag)
+        B.L(eamt.outputs[0], eone.inputs[1])
+        dn = B.M('MULTIPLY', label="crater d/r warped " + tag)
+        B.L(dn0.outputs[0], dn.inputs[0])
+        B.L(eone.outputs[0], dn.inputs[1])
+
+        # A simple crater is about five times as wide as it is deep, and its
+        # rim stands only a twentieth of its depth above the surrounding
+        # ground. The first pass had the rim at over half the depth, which is
+        # what made these read as blisters rather than as holes -- and the
+        # floor was a point rather than a floor.
+        bowl = B.MR(0.30, 0.80, -1.0, 0.0, "crater bowl " + tag, 'SMOOTHSTEP')
         B.L(dn.outputs[0], bowl.inputs[0])
-        rim = B.MR(0.62, 0.90, 0.0, 1.0, "crater rim in " + tag, 'SMOOTHSTEP')
+        rim = B.MR(0.72, 0.94, 0.0, 1.0, "crater rim in " + tag, 'SMOOTHSTEP')
         B.L(dn.outputs[0], rim.inputs[0])
-        rim2 = B.MR(0.90, 1.15, 1.0, 0.0, "crater rim out " + tag, 'SMOOTHSTEP')
+        rim2 = B.MR(0.94, 1.22, 1.0, 0.0, "crater rim out " + tag, 'SMOOTHSTEP')
         B.L(dn.outputs[0], rim2.inputs[0])
         rimm = B.M('MULTIPLY', label="crater rim " + tag)
         B.L(rim.outputs["Result"], rimm.inputs[0])
         B.L(rim2.outputs["Result"], rimm.inputs[1])
-        rw = B.M('MULTIPLY', y=0.55, label="rim height " + tag)
+        rw = B.M('MULTIPLY', y=0.22, label="rim height " + tag)
         B.L(rimm.outputs[0], rw.inputs[0])
         prof = B.M('ADD', label="crater profile " + tag)
         B.L(bowl.outputs["Result"], prof.inputs[0])
         B.L(rw.outputs[0], prof.inputs[1])
+
+        if peak:
+            # Above a few tens of kilometres a crater's floor rebounds and
+            # throws up a central peak. Only the large end of this layer gets
+            # one, which is another thing distinguishing big craters from
+            # small ones besides being bigger.
+            pk = B.MR(0.0, 0.26, 0.55, 0.0, "central peak " + tag, 'SMOOTHSTEP')
+            B.L(dn.outputs[0], pk.inputs[0])
+            pkg = B.M('GREATER_THAN', y=rmin + (rmax - rmin) * 0.62,
+                      label="peak threshold " + tag)
+            B.L(rad.outputs["Result"], pkg.inputs[0])
+            pkm = B.M('MULTIPLY', label="peak gated " + tag)
+            B.L(pk.outputs["Result"], pkm.inputs[0])
+            B.L(pkg.outputs[0], pkm.inputs[1])
+            prof2 = B.M('ADD', label="crater + peak " + tag)
+            B.L(prof.outputs[0], prof2.inputs[0])
+            B.L(pkm.outputs[0], prof2.inputs[1])
+            prof = prof2
 
         # Empty ground: cells below the gate never took a hit.
         hit = B.M('GREATER_THAN', y=gate, label="crater hit " + tag)
@@ -659,21 +751,39 @@ def craters(tree, B, S, P, FIELD):
         B.L(prof.outputs[0], g0.inputs[0])
         B.L(hit.outputs[0], g0.inputs[1])
 
+        # Age. A crater floor fills, a rim slumps, a neighbour lands on top.
+        # Scaling each cell's whole profile by its own random gives a surface
+        # where some craters are crisp and some are barely readable ghosts,
+        # which is what four billion years looks like.
+        deg = B.MR(0.0, 1.0, 0.18, 1.0, "crater age " + tag)
+        B.L(sep.outputs["Z"], deg.inputs[0])
+        g0b = B.M('MULTIPLY', label="crater aged " + tag)
+        B.L(g0.outputs[0], g0b.inputs[0])
+        B.L(deg.outputs["Result"], g0b.inputs[1])
+
         # Bigger craters cut deeper, which is what makes the size spread read
         # as a spread rather than as one shape at several scales.
         dscale = B.MR(rmin, rmax, 0.55, 1.45, "crater depth " + tag)
         B.L(rad.outputs["Result"], dscale.inputs[0])
         g1 = B.M('MULTIPLY', label="crater scaled " + tag)
-        B.L(g0.outputs[0], g1.inputs[0])
+        B.L(g0b.outputs[0], g1.inputs[0])
         B.L(dscale.outputs["Result"], g1.inputs[1])
         w = B.M('MULTIPLY', y=depth, label="crater weight " + tag)
         B.L(g1.outputs[0], w.inputs[0])
         return w.outputs[0]
 
-    fine = layer(S["Crater Scale"], 1.0, 0.10, 0.44, 0.30, 1.0, "fine")
-    basin = layer(S["Crater Scale"], 0.28, 0.16, 0.52, 0.62, 1.7, "basin")
-    both = B.M('ADD', label="crater layers")
-    B.L(fine, both.inputs[0])
+    # Three passes an octave and a half apart. Two was not enough to carry a
+    # size range: the fine pass is too dense to hold a basin, and a basin pass
+    # dense enough to be visible everywhere leaves no untouched ground.
+    fine = layer(S["Crater Scale"], 1.0, 0.10, 0.46, 0.22, 0.85, "fine")
+    mid = layer(S["Crater Scale"], 0.42, 0.18, 0.62, 0.42, 1.40, "mid")
+    basin = layer(S["Crater Scale"], 0.14, 0.26, 0.80, 0.55, 2.40, "basin",
+                  peak=True)
+    stack = B.M('ADD', label="crater layers")
+    B.L(fine, stack.inputs[0])
+    B.L(mid, stack.inputs[1])
+    both = B.M('ADD', label="crater layers 2")
+    B.L(stack.outputs[0], both.inputs[0])
     B.L(basin, both.inputs[1])
 
     land = B.M('SUBTRACT', x=1.0, label="crater land")
@@ -684,7 +794,7 @@ def craters(tree, B, S, P, FIELD):
     amt = B.M('MULTIPLY', label="crater amt")
     B.L(g1.outputs[0], amt.inputs[0])
     B.L(S["Crater Amount"], amt.inputs[1])
-    hgt = B.M('MULTIPLY', y=6.0, label="crater height")
+    hgt = B.M('MULTIPLY', y=9.0, label="crater height")
     B.L(amt.outputs[0], hgt.inputs[0])
     consumers = splice(tree, micro, 0)
     add = B.M('ADD', label="micro+craters")

@@ -286,7 +286,11 @@ def build_clouds(radius=1000.0):
     # same flow the clouds do, so the eddies sit ON the edges where they
     # belong instead of floating over flat colour.
     btc = M('SUBTRACT', y=0.5, loc=(-880, -1120)); L(b1.outputs["Factor"], btc.inputs[0])
-    bta = M('MULTIPLY', y=0.085, loc=(-800, -1120)); L(btc.outputs["Value"], bta.inputs[0])
+    # 0.085 left every band the same width, and equal bands are most of what
+    # reads as cartoon: Jupiter's equatorial zone is several times the width of
+    # the belts beside it. A larger macro displacement varies the spacing as
+    # well as the shape of the boundaries.
+    bta = M('MULTIPLY', y=0.155, loc=(-800, -1120)); L(btc.outputs["Value"], bta.inputs[0])
     btz = M('ADD', loc=(-800, -1000)); L(bz.outputs["Value"], btz.inputs[0])
     L(bta.outputs["Value"], btz.inputs[1])
     # ---------- shear turbulence on the boundaries ----------

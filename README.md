@@ -7,6 +7,35 @@ from one N-panel, and all of it animated from a single clock.
 
 **Version 3.0.0 · Blender 5.0+ · Cycles · GPL-3.0-or-later**
 
+![A ringed ice world seen edge-on, rings raked across the frame](docs/media/09_ring_plane.jpg)
+
+---
+
+## Showcase
+
+Thirty-three seconds, twenty-four shots, every frame rendered in Cycles from
+this add-on. No textures, no sculpting, no external assets except the station
+in the second shot.
+
+[![PLNT showcase video](docs/media/video_poster.jpg)](https://github.com/mfawazsec/plnt-planet-generator/raw/main/docs/media/plnt-showcase.mp4)
+
+*Click to play (4.6 MB, 720p). The 1440p master is not in the repository.*
+
+---
+
+## What it makes
+
+Each of these is one preset, one seed, one camera. No post beyond a colour
+grade.
+
+| | |
+|---|---|
+| ![Earthlike world at the terminator](docs/media/02_earth_limb.jpg) **`earthlike`** — continents, weather systems, a real terminator | ![Gas giant with banded cloud belts](docs/media/08_giant_bands.jpg) **`gas_giant`** — belts, zones, vortex trains, storm ovals |
+| ![Ocean world with sun glint](docs/media/05_ocean_glint.jpg) **`ocean_world`** — wave-slope glint, foam, shelf colour | ![Frozen world ice margin](docs/media/06_ice_margin.jpg) **`frozen`** — pack ice, pressure ridges, leads |
+| ![Volcanic world with lava fissures](docs/media/07_volcanic_push.jpg) **`volcanic`** — fissure networks, cooling crust | ![Cratered dead moon at low sun](docs/media/11_moon_terminator.jpg) **`dead_moon`** — power-law craters, central peaks, rays |
+| ![Industrial world with city lights](docs/media/13_b_industrial.jpg) **`industrial_world`** — city grids, roads, night lights | ![Alien terrain in magenta and violet](docs/media/04_alien_texture.jpg) **`pristine_alien`** — non-terrestrial biochemistry |
+| ![Dyson swarm around a planet](docs/media/22_mega_finale.jpg) **`megastructure`** — mirror belts, ringworld arcs, swarm | ![Neptune-like world with dark rings](docs/media/00_wide_neptune.jpg) **`gas_giant`** retuned — deep azure, faint banding |
+
 ---
 
 ## Install
@@ -19,9 +48,15 @@ from one N-panel, and all of it animated from a single clock.
 
 ## First planet
 
-In an empty scene the panel offers a single button: **Create Planet System**.
-It builds the globe, its shells, the sun and the camera from source. Nothing
-is appended from a `.blend`, so the result is reproducible on any machine.
+In an empty scene the panel offers a single button.
+
+![The PLNT sidebar in an empty scene, showing Create Planet System](docs/media/ui_empty.jpg)
+
+**Create Planet System** builds the globe, its shells, the sun and the camera
+from source. Nothing is appended from a `.blend`, so the result is reproducible
+on any machine.
+
+![An earthlike planet in the Cycles viewport](docs/media/ui_viewport.jpg)
 
 From there:
 
@@ -32,8 +67,15 @@ From there:
 - **Quality**, **Performance** and **Time Scale**, the quick row at the top.
 - Thirteen parameter panels, grouped under **Planet**, **Sky**,
   **Civilisation** and **Scene**.
+- **Basic / Advanced / All** filters how many sockets each panel shows, and the
+  search box filters by name across all of them.
 
 **Remove Planet System** takes it all back out again.
+
+> **Known UI defect.** With a planet in the scene, the four group headers
+> (Planet, Sky, Civilisation, Scene) are drawn over the Quality, Performance
+> and Time Scale rows in the sidebar. The controls still work — the labels
+> overlap. Tracked below under Known gaps.
 
 ## The two dials
 
@@ -153,15 +195,22 @@ export PLNT_BLENDER="flatpak run --command=blender org.blender.Blender"
 
 ## Known gaps
 
-1. **Cloud shadows.** Measured at 98.2 % of baseline with them off, so the shadow
+1. **Sidebar layout.** With a planet in the scene the four group headers are
+   drawn over the Quality, Performance and Time Scale rows. The group panels
+   are children of `PLNT_PT_main`, and in Blender 5 a child panel's header is
+   laid out over the parent's drawn content rather than after it. Re-registering
+   the same classes with no parent at runtime clears it; making the same change
+   in source does not, so the cause is not yet understood and the fix is not in.
+   Controls are unaffected.
+2. **Cloud shadows.** Measured at 98.2 % of baseline with them off, so the shadow
    rays are 2 % of render time, inside the noise. An analytic refactor is still
    worth doing for better-defined shadows. Design is in `docs/DEVLOG.md`.
-2. **Cold lava crust.** The fix is written and queued; confirm in a frame.
-3. **Atmosphere is brighter** than the volume it replaced. `Intensity` toward
+3. **Cold lava crust.** The fix is written and queued; confirm in a frame.
+4. **Atmosphere is brighter** than the volume it replaced. `Intensity` toward
    0.6 recovers the older contrast at no speed cost.
-4. **Rings are darker** but structurally richer.
-5. **Craters** render but have not been isolated in any frame.
-6. **Motion blur** is off and untested at these angular rates.
+5. **Rings are darker** but structurally richer.
+6. **Craters** render but have not been isolated in any frame.
+7. **Motion blur** is off and untested at these angular rates.
 
 ## Reading
 
@@ -175,6 +224,15 @@ export PLNT_BLENDER="flatpak run --command=blender org.blender.Blender"
 
 Developed against Blender 5.2.1 LTS on Cycles with OptiX on an RTX 2060, AgX
 view transform. Every measured number in the docs comes from that machine.
+
+## Credits
+
+The showcase video uses one asset that is not part of this project and is not
+in this repository: the NASA Lunar Gateway model by **andreas9343** on
+Sketchfab, licensed **CC BY 4.0**, seen in silhouette in the second shot.
+Everything else on screen is generated by this add-on.
+
+Music generated with Google Lyria.
 
 ## Licence
 

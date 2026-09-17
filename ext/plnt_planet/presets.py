@@ -278,7 +278,7 @@ P["dead_moon"] = dict(
              # fraction of the craters, and rays off the youngest few. Strata
              # drops right down -- bedding planes are a sedimentary feature and
              # an airless basalt moon has no business showing them.
-             "Micro Disp Height": 0.534, "Crater Amount": 0.95, "Crater Scale": 30.0,
+             "Micro Disp Height": 0.534, "Crater Amount": 0.95, "Crater Scale": 26.0,
              "Maria Amount": 0.90, "Maria Scale": 1.4, "Crater Ray Amount": 0.75,
              "Strata Amount": 0.08},
     clouds={"Cloud Coverage": 0.0, "Cloud Density": 0.0, "Band Strength": 0.5, "Detail Scale": 1.0},
