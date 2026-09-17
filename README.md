@@ -70,12 +70,9 @@ From there:
 - **Basic / Advanced / All** filters how many sockets each panel shows, and the
   search box filters by name across all of them.
 
-**Remove Planet System** takes it all back out again.
+![The PLNT sidebar with a planet in the scene](docs/media/ui_panel.jpg)
 
-> **Known UI defect.** With a planet in the scene, the four group headers
-> (Planet, Sky, Civilisation, Scene) are drawn over the Quality, Performance
-> and Time Scale rows in the sidebar. The controls still work — the labels
-> overlap. Tracked below under Known gaps.
+**Remove Planet System** takes it all back out again.
 
 ## The two dials
 
@@ -195,22 +192,15 @@ export PLNT_BLENDER="flatpak run --command=blender org.blender.Blender"
 
 ## Known gaps
 
-1. **Sidebar layout.** With a planet in the scene the four group headers are
-   drawn over the Quality, Performance and Time Scale rows. The group panels
-   are children of `PLNT_PT_main`, and in Blender 5 a child panel's header is
-   laid out over the parent's drawn content rather than after it. Re-registering
-   the same classes with no parent at runtime clears it; making the same change
-   in source does not, so the cause is not yet understood and the fix is not in.
-   Controls are unaffected.
-2. **Cloud shadows.** Measured at 98.2 % of baseline with them off, so the shadow
+1. **Cloud shadows.** Measured at 98.2 % of baseline with them off, so the shadow
    rays are 2 % of render time, inside the noise. An analytic refactor is still
    worth doing for better-defined shadows. Design is in `docs/DEVLOG.md`.
-3. **Cold lava crust.** The fix is written and queued; confirm in a frame.
-4. **Atmosphere is brighter** than the volume it replaced. `Intensity` toward
+2. **Cold lava crust.** The fix is written and queued; confirm in a frame.
+3. **Atmosphere is brighter** than the volume it replaced. `Intensity` toward
    0.6 recovers the older contrast at no speed cost.
-5. **Rings are darker** but structurally richer.
-6. **Craters** render but have not been isolated in any frame.
-7. **Motion blur** is off and untested at these angular rates.
+4. **Rings are darker** but structurally richer.
+5. **Craters** render but have not been isolated in any frame.
+6. **Motion blur** is off and untested at these angular rates.
 
 ## Reading
 
