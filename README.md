@@ -17,11 +17,9 @@ Thirty-three seconds, twenty-four shots, every frame rendered in Cycles from
 this add-on. No textures, no sculpting, no external assets except the station
 in the second shot.
 
-[![PLNT showcase video](docs/media/video_poster.jpg)](https://youtu.be/0ByisfJl65Y)
+https://github.com/user-attachments/assets/18c4d37c-0101-4e48-8b83-6d8870b119c3
 
-*Watch on YouTube in 1440p. A 720p copy is in this repository at
-[`docs/media/plnt-showcase.mp4`](docs/media/plnt-showcase.mp4) for anyone
-reading offline.*
+*Plays here at 1080p. [Watch on YouTube](https://youtu.be/0ByisfJl65Y) for 1440p.*
 
 ---
 
