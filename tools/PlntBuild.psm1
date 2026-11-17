@@ -18,6 +18,7 @@ function Get-PlntBlender {
     if ($Override) { return $Override }
     if ($env:PLNT_BLENDER) { return $env:PLNT_BLENDER }
     $candidates = @(
+        'C:\Program Files\Blender Foundation\Blender 5.3\blender.exe',
         'C:\Program Files\Blender Foundation\Blender 5.2\blender.exe',
         'C:\Program Files\Blender Foundation\Blender 5.1\blender.exe',
         'C:\Program Files\Blender Foundation\Blender 5.0\blender.exe'
@@ -45,8 +46,13 @@ function Get-PlntPython {
         throw 'No tools venv. Run tools\bootstrap.ps1 first (montage.py and compare.py need Pillow).'
     }
     $bl = Get-PlntBlender
-    $py = Join-Path (Split-Path -Parent $bl) '5.2\python\bin\python.exe'
-    if (Test-Path -LiteralPath $py) { return $py }
+    # Blender keeps its interpreter under a <major>.<minor> folder; take
+    # whichever this install has rather than pinning one release.
+    $py = Get-ChildItem -LiteralPath (Split-Path -Parent $bl) -Directory -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -match '^\d+\.\d+$' } | Sort-Object { [version]$_.Name } -Descending |
+        ForEach-Object { Join-Path $_.FullName 'python\bin\python.exe' } |
+        Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+    if ($py) { return $py }
     throw 'No usable Python found.'
 }
 

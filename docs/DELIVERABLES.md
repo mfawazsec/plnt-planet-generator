@@ -10,7 +10,7 @@
 
 | What | Where |
 |---|---|
-| Installable add-on | `ext/plnt_planet-3.0.0.zip` |
+| Installable add-on | `ext/plnt_planet-3.1.0.zip` |
 | The scene | `PLNT_PlanetGen.blend` |
 | Build the add-on | `& "$blender\5.2\python\bin\python.exe" tools\build_extension.py` then `blender --command extension build --source-dir ext\plnt_planet --output-dir ext` |
 | Verify everything | `.\tools\check_all.ps1` |

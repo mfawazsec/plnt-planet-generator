@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "plnt_planet"
-version = "3.0.0"
+version = "3.1.0"
 name = "PLNT Procedural Planet"
 tagline = "Procedural sci-fi planets with terrain, weather and cities"
 maintainer = "PLNT"

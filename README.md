@@ -5,7 +5,7 @@ terrain, ocean and ice, weather, atmosphere, rings, cities and night lights,
 orbital hardware and megastructures. All of it procedural, all of it driven
 from one N-panel, and all of it animated from a single clock.
 
-**Version 3.0.0 · Blender 5.0+ · Cycles · GPL-3.0-or-later**
+**Version 3.1.0 · Blender 5.0+ (DLSS viewport on 5.3+) · Cycles · GPL-3.0-or-later**
 
 ![A ringed ice world seen edge-on, rings raked across the frame](docs/media/09_ring_plane.jpg)
 
@@ -40,7 +40,7 @@ grade.
 
 ## Install
 
-1. Download `dist/plnt_planet-3.0.0.zip`.
+1. Download `dist/plnt_planet-3.1.0.zip`.
 2. In Blender: **Edit → Preferences → Add-ons → ▾ → Install from Disk…**, pick
    the zip.
 3. It enables itself. Press <kbd>N</kbd> in the 3D viewport and look for the
@@ -117,7 +117,7 @@ the Scene: `plnt_time_scale`, `plnt_day_length_h`, `plnt_beacon_rate`.
 
 | Path | What it is |
 |---|---|
-| `dist/plnt_planet-3.0.0.zip` | The installable extension. Built and validated with Blender's own `extension build`. |
+| `dist/plnt_planet-3.1.0.zip` | The installable extension. Built and validated with Blender's own `extension build`. |
 | `ext/plnt_planet/` | Extension package source (manifest + modules), generated from the working tree. |
 | `core/` | The working tree, and the source of truth. |
 | `plnt_*.py`, `PLNT_presets.py` | Flat modules the build folds into the package. |
@@ -207,13 +207,15 @@ export PLNT_BLENDER="flatpak run --command=blender org.blender.Blender"
 | Doc | What it is |
 |---|---|
 | [`docs/DEVLOG.md`](docs/DEVLOG.md) | Architecture, the API traps, the defect log, cost measurements. |
+| [`docs/V3_1_REPORT.md`](docs/V3_1_REPORT.md) | v3.1: Blender 5.3, DLSS viewport denoising, 5.2 vs 5.3 timings. |
 | [`docs/V3_REPORT.md`](docs/V3_REPORT.md) | What v3 changed and why. |
 | [`docs/AUDIT_2026-09-12.md`](docs/AUDIT_2026-09-12.md) | The audit v3 answers. |
 | [`docs/V2_REPORT.md`](docs/V2_REPORT.md) | The v2 report. |
 | [`docs/DELIVERABLES.md`](docs/DELIVERABLES.md) | Command map from the original working tree. |
 
-Developed against Blender 5.2.1 LTS on Cycles with OptiX on an RTX 2060, AgX
-view transform. Every measured number in the docs comes from that machine.
+Developed against Blender 5.2.1 LTS and tested on 5.3.0, on Cycles with OptiX
+on an RTX 2060, AgX view transform. Every measured number in the docs comes
+from that machine.
 
 ## Credits
 
