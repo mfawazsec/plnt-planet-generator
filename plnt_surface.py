@@ -45,6 +45,10 @@ _D = _os.path.dirname(_os.path.abspath(__file__))
 
 
 def _tech():
+    # Packaged, tech is a sibling submodule and plnt_tech.py does not exist.
+    if __package__:
+        import importlib
+        return importlib.import_module(".tech", __package__)
     sp = _ilu.spec_from_file_location("plnt_tech", _os.path.join(_D, "plnt_tech.py"))
     m = _ilu.module_from_spec(sp); _sys.modules["plnt_tech"] = m; sp.loader.exec_module(m)
     return m
@@ -420,7 +424,13 @@ def build_surface(name="PLNT_SurfaceShader", sun_dir_obj=None, pos_attr=None):
     # group input defaulting to 0. Cycles constant-folds a constant-zero
     # branch away entirely, so unused features cost nothing at render time.
     try:
-        from core import surface_detail
+        if __package__:
+            # Packaged: a path load would strip core's package context and
+            # its own `from .nodeutil` import would fail.
+            import importlib
+            surface_detail = importlib.import_module(".core.surface_detail", __package__)
+        else:
+            from core import surface_detail
     except ImportError:
         import importlib.util as _ilu
         _p = os.path.join(os.path.dirname(os.path.abspath(__file__)),

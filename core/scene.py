@@ -273,9 +273,14 @@ def _import_sub(name):
     """
     import importlib
     import os
+    # Relative to __package__ (...plnt_planet.core), not __name__: anchored on
+    # the module, ".." only reaches core itself, the import misses, and the
+    # path fallback below looks for plnt_field.py inside the installed
+    # extension, where it does not exist. Create Planet System died on that.
+    # TypeError is the working tree, where __package__ is empty.
     try:
-        return importlib.import_module("..%s" % name, __name__)
-    except Exception:
+        return importlib.import_module("..%s" % name, __package__)
+    except (ImportError, TypeError):
         directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         return _load_flat(_SUBMODULES.get(name, name), directory)
 

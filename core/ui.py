@@ -273,7 +273,9 @@ def presets_ns(force=False):
         return _NS_CACHE
     ns = None
     try:
-        from . import presets as _p
+        # presets lives beside core/, not inside it: `from .` found nothing
+        # and the preset dropdown shipped empty ('NONE').
+        from .. import presets as _p
         ns = _p.__dict__
     except Exception:
         txt = bpy.data.texts.get("PLNT_presets.py")
@@ -1234,7 +1236,7 @@ class PLNT_OT_apply_shot(_Base):
 
     def execute(self, context):
         try:
-            from . import shots as _s
+            from .. import shots as _s   # beside core/, not inside it
         except ImportError:
             self.report({'ERROR'}, "Shot definitions not available")
             return {'CANCELLED'}

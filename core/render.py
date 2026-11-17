@@ -144,15 +144,24 @@ TIER_SECONDS = {'DRAFT': 13.0, 'FAST': 23.0, 'PREVIEW': 48.0,
 #                   measurable at 0.85, so only the Low tier takes it.
 #   denoise_gpu     GPU denoising needs headroom a 6 GB card does not have at
 #                   2560x1440, so it is only taken up above 8 GB.
+#   dlss_upscale    Viewport only. Blender 5.3 added DLSS Ray Reconstruction as
+#                   a Cycles PREVIEW denoiser (cycles.preview_denoiser='DLSS');
+#                   the final-render denoiser is still OptiX/OIDN, so this
+#                   never touches F12 or batch times. The value is
+#                   cycles.preview_denoising_upscale_quality: how far DLSS
+#                   renders below viewport resolution and upscales.
 PERFORMANCE = {
     'LOW': dict(subdiv=7, adaptive_space='OBJECT', adaptive_edge=6.0,
                 detail_scale=0.6, denoise_gpu=False, persistent=False,
+                dlss_upscale='PERFORMANCE',
                 note="Laptops and 4 GB cards. Coarser terrain, much less VRAM"),
     'BALANCED': dict(subdiv=8, adaptive_space='OBJECT', adaptive_edge=3.0,
                      detail_scale=1.0, denoise_gpu=False, persistent=True,
+                     dlss_upscale='BALANCED',
                      note="The tested setting on a 6 GB card"),
     'HIGH': dict(subdiv=8, adaptive_space='PIXEL', adaptive_edge=0.01,
                  detail_scale=1.0, denoise_gpu=True, persistent=True,
+                 dlss_upscale='QUALITY',
                  note="8 GB or more. Camera-relative dicing and every octave"),
 }
 PERFORMANCE_LEVELS = ('LOW', 'BALANCED', 'HIGH')
@@ -299,6 +308,42 @@ def apply_quality(quality, scene=None, dicing_override=None, displacement=None):
     return info
 
 
+def _enum_ids(owner, prop):
+    """Identifiers an enum accepts. Cycles builds these at runtime, so
+    bl_rna.enum_items comes back empty; a rejected assignment lists them."""
+    try:
+        setattr(owner, prop, "__PLNT_PROBE__")
+    except TypeError as ex:
+        msg = str(ex)
+        i, j = msg.rfind("("), msg.rfind(")")
+        if 0 <= i < j:
+            return {s.strip(" '\"") for s in msg[i + 1:j].split(",") if s.strip()}
+    except Exception:
+        pass
+    return set()
+
+
+def apply_viewport_denoiser(scene=None, upscale='BALANCED'):
+    """Use DLSS for the Cycles viewport where this Blender offers it (5.3+).
+
+    Feature-detected, never version-checked: on 5.0-5.2 the enum has no DLSS
+    and the viewport keeps AUTO, exactly as before. Whether the driver and GPU
+    can actually run it is Cycles' call at draw time; it falls back on its own.
+    """
+    scene = scene or bpy.context.scene
+    cy = scene.cycles
+    out = {"preview_denoiser": getattr(cy, "preview_denoiser", None), "dlss": False}
+    if 'DLSS' not in _enum_ids(cy, "preview_denoiser"):
+        return out
+    cy.use_preview_denoising = True
+    cy.preview_denoiser = 'DLSS'
+    if upscale in _enum_ids(cy, "preview_denoising_upscale_quality"):
+        cy.preview_denoising_upscale_quality = upscale
+    out.update(preview_denoiser='DLSS', dlss=True,
+               upscale=getattr(cy, "preview_denoising_upscale_quality", None))
+    return out
+
+
 def apply_performance(level, scene=None):
     """Apply one performance tier. Independent of quality."""
     level = level.upper()
@@ -321,6 +366,7 @@ def apply_performance(level, scene=None):
     # each. It therefore follows the performance tier, not the quality.
     scene.render.use_persistent_data = bool(cfg["persistent"])
     out["persistent_data"] = scene.render.use_persistent_data
+    out["viewport"] = apply_viewport_denoiser(scene, cfg["dlss_upscale"])
     return out
 
 
