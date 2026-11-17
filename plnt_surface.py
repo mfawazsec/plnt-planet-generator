@@ -45,10 +45,14 @@ _D = _os.path.dirname(_os.path.abspath(__file__))
 
 
 def _tech():
-    # Packaged, tech is a sibling submodule and plnt_tech.py does not exist.
+    # inside the packaged extension the module is a sibling named tech.py;
+    # in the flat working tree it is plnt_tech.py next to this file
     if __package__:
-        import importlib
-        return importlib.import_module(".tech", __package__)
+        import importlib as _il
+        try:
+            return _il.import_module(".tech", __package__)
+        except Exception:
+            pass
     sp = _ilu.spec_from_file_location("plnt_tech", _os.path.join(_D, "plnt_tech.py"))
     m = _ilu.module_from_spec(sp); _sys.modules["plnt_tech"] = m; sp.loader.exec_module(m)
     return m
@@ -67,15 +71,15 @@ LOOK_IN = [
     ("Ice Brightness", 'NodeSocketFloat', 0.80, 0.0, 2.0),
     ("Ocean Shallow", 'NodeSocketColor', (0.045, 0.215, 0.275, 1), None, None),
     ("Ocean Deep", 'NodeSocketColor', (0.0035, 0.014, 0.040, 1), None, None),
-    ("Shelf Boost", 'NodeSocketFloat', 1.10, 0.0, 4.0),
+    ("Shelf Boost", 'NodeSocketFloat', 0.37, 0.0, 4.0),
     ("Slope Rock Threshold", 'NodeSocketFloat', 0.26, 0.0, 1.0),
     ("Vegetation Amount", 'NodeSocketFloat', 1.0, 0.0, 2.0),
     ("Ice Temp Threshold", 'NodeSocketFloat', 0.20, 0.0, 1.0),
     ("River Tint", 'NodeSocketFloat', 0.30, 0.0, 2.0),
     ("Patchiness", 'NodeSocketFloat', 0.35, 0.0, 1.0),
     ("Lava Emission", 'NodeSocketFloat', 0.0, 0.0, 40.0),
-    ("Micro Disp Height", 'NodeSocketFloat', 2.2, 0.0, 200.0),
-    ("Micro Disp Scale", 'NodeSocketFloat', 145.0, 1.0, 6000.0),
+    ("Micro Disp Height", 'NodeSocketFloat', 0.35, 0.0, 200.0),
+    ("Micro Disp Scale", 'NodeSocketFloat', 300.0, 1.0, 6000.0),
 ]
 
 FIELD_DEFAULTS = {
@@ -107,7 +111,7 @@ def build_surface(name="PLNT_SurfaceShader", sun_dir_obj=None, pos_attr=None):
     for p in FIELD_PARAMS:
         dv, mn, mx = FIELD_DEFAULTS[p]
         sk(p, 'INPUT', 'NodeSocketFloat', dv, mn, mx)
-    sk("Relief Strength", 'INPUT', 'NodeSocketFloat', 70.0, 0.0, 400.0)
+    sk("Relief Strength", 'INPUT', 'NodeSocketFloat', 23.0, 0.0, 400.0)
     for n, st, dv, mn, mx in LOOK_IN:
         sk(n, 'INPUT', st, dv, mn, mx)
     TECH = _tech()
@@ -322,10 +326,44 @@ def build_surface(name="PLNT_SurfaceShader", sun_dir_obj=None, pos_attr=None):
     hpn.inputs["Scale"].default_value = 5.5
     hpn.inputs["Detail"].default_value = 5.0
     L(nrm.outputs["Vector"], hpn.inputs["Vector"]); L(lwa.outputs["Value"], hpn.inputs["W"])
-    hpr = MR((280, -600), 0.30, 0.70, 0.18, 1.0, "heatregion")
+    # The floor matters more than the ceiling. At 0.18 the ground between the
+    # active provinces went to black under AgX, so the planet read as a handful
+    # of unconnected burning islands on a dead crust. Lifting it leaves the
+    # whole fissure web faintly lit everywhere -- cooling rock still glowing in
+    # the channels -- with the hot provinces standing well clear of it, which is
+    # both what Io looks like and what makes the surface read as one system.
+    hpr = MR((280, -600), 0.30, 0.70, 0.30, 1.0, "heatregion")
     L(hpn.outputs["Factor"], hpr.inputs[0])
+    # Secondary fissure network.
+    #
+    # One Voronoi gives one set of cell boundaries: a clean tessellation with
+    # nothing between the lines, which reads as a crackle glaze rather than as
+    # a volcanic province. Io's flows are fissure-fed -- long channels spreading
+    # off the main vents and dying out in the plains between them. A second,
+    # finer network gated by proximity to the first gives exactly that: the
+    # fine lines are brightest where they meet a major fissure and fade as they
+    # run away from it, so the whole surface reads as connected rather than as
+    # two patterns laid over each other.
+    lvn2 = N("ShaderNodeTexVoronoi"); lvn2.location = (100, -760)
+    lvn2.label = "lava branches"
+    lvn2.voronoi_dimensions = '4D'; lvn2.feature = 'DISTANCE_TO_EDGE'
+    lvn2.inputs["Scale"].default_value = 33.0
+    lvn2.inputs["Randomness"].default_value = 1.0
+    L(lwp.outputs["Vector"], lvn2.inputs["Vector"])
+    L(lwa.outputs["Value"], lvn2.inputs["W"])
+    crack2 = MR((280, -760), 0.0, 0.055, 1.0, 0.0, "branch")
+    L(lvn2.outputs["Distance"], crack2.inputs[0])
+    csh2 = M('POWER', y=2.4, loc=(460, -760)); L(crack2.outputs["Result"], csh2.inputs[0])
+    near = MR((460, -900), 0.0, 0.55, 0.30, 1.0, "branch feed")
+    L(crack.outputs["Result"], near.inputs[0])
+    brg = M('MULTIPLY', loc=(640, -760), nm="branch gated")
+    L(csh2.outputs["Value"], brg.inputs[0]); L(near.outputs["Result"], brg.inputs[1])
+    brw = M('MULTIPLY', y=0.62, loc=(800, -760)); L(brg.outputs["Value"], brw.inputs[0])
+    fiss = M('ADD', loc=(640, -540), nm="fissures", clamp=True)
+    L(csh.outputs["Value"], fiss.inputs[0]); L(brw.outputs["Value"], fiss.inputs[1])
+
     heat = M('MULTIPLY', loc=(640, -400), nm="heat")
-    L(csh.outputs["Value"], heat.inputs[0]); L(hpr.outputs["Result"], heat.inputs[1])
+    L(fiss.outputs["Value"], heat.inputs[0]); L(hpr.outputs["Result"], heat.inputs[1])
     # deeper basins run hotter
     dboost = MR((460, -600), 0.0, 1.0, 0.75, 1.35, "depthheat")
     L(dt.outputs["Result"], dboost.inputs[0])
@@ -346,8 +384,18 @@ def build_surface(name="PLNT_SurfaceShader", sun_dir_obj=None, pos_attr=None):
     # square the intensity so crust emits almost nothing and cores stay hot
     lint = M('POWER', y=2.1, loc=(1000, -600))
     L(heat2.outputs["Value"], lint.inputs[0])
+    # Lava was gated hard on sea_mask, so the molten basins glowed and the
+    # crust between them emitted nothing at all. That draws a planet as a set
+    # of unconnected burning islands floating on black, when what a volcanic
+    # world actually has is one fissure system: the basins are where it has
+    # broken through, and the same channels carry on across the crust between
+    # them, cooler and dimmer but continuous. Giving land a fraction of the
+    # emission lets the network read as connected without the crust competing
+    # with the basins.
+    landl = MR((1000, -600), 0.0, 1.0, 0.13, 1.0, "crust glow")
+    L(o["sea_mask"], landl.inputs[0])
     lavm = M('MULTIPLY', loc=(1180, -600), nm="lavamask")
-    L(o["sea_mask"], lavm.inputs[0]); L(gi.outputs["Lava Emission"], lavm.inputs[1])
+    L(landl.outputs["Result"], lavm.inputs[0]); L(gi.outputs["Lava Emission"], lavm.inputs[1])
     lavi = M('MULTIPLY', loc=(1360, -600))
     L(lint.outputs["Value"], lavi.inputs[0]); L(lavm.outputs["Value"], lavi.inputs[1])
     lavs = N("ShaderNodeVectorMath"); lavs.operation = 'SCALE'; lavs.location = (1360, -400)
@@ -355,11 +403,60 @@ def build_surface(name="PLNT_SurfaceShader", sun_dir_obj=None, pos_attr=None):
     emsum = N("ShaderNodeVectorMath"); emsum.operation = 'ADD'; emsum.location = (320, -140)
     L(emis, emsum.inputs[0]); L(lavs.outputs["Vector"], emsum.inputs[1])
 
+    # --- SEA ICE
+    #
+    # The ice factor was mixed into the LAND albedo chain only, so a world cold
+    # enough to grow caps over its continents still had open blue water at the
+    # pole, and "frozen" read as "temperate ocean with snowy landmasses". Sea
+    # ice is the same temperature mask applied over the ocean instead: it
+    # reuses `isc`, so it inherits Ice Brightness and the crack detail that
+    # core.surface_detail splices into `icecol`, and it is gated by sea_mask so
+    # the land side keeps its own terrain-shaded ice untouched.
+    #
+    # Rougher than open water (0.42 against 0.08) and a lower IOR: pack ice
+    # scatters where the sea reflects, which is what stops the cap reading as
+    # a painted white decal over a mirror.
+    # The land ice ramp is 0.09 of temperature wide, which on open water draws
+    # a razor-straight latitude line: the ice edge becomes a painted stripe.
+    # A real pack-ice margin is ragged over hundreds of km, so perturb the
+    # temperature with a large-scale noise before thresholding and give the
+    # sea ramp more than twice the width. Leads and polynyas fall out of the
+    # same noise for free.
+    sin_ = N("ShaderNodeTexNoise"); sin_.location = (-660, -300); sin_.label = "ice margin"
+    sin_.noise_dimensions = '4D'; sin_.noise_type = 'FBM'
+    sin_.inputs["Scale"].default_value = 9.0
+    sin_.inputs["Detail"].default_value = 7.0
+    sin_.inputs["Roughness"].default_value = 0.55
+    L(nrm.outputs["Vector"], sin_.inputs["Vector"])
+    siw = M('MULTIPLY', y=3.77, loc=(-840, -300)); L(gi.outputs["Seed"], siw.inputs[0])
+    L(siw.outputs["Value"], sin_.inputs["W"])
+    sic = M('SUBTRACT', y=0.5, loc=(-500, -300)); L(sin_.outputs["Factor"], sic.inputs[0])
+    sia = M('MULTIPLY', y=0.13, loc=(-420, -300)); L(sic.outputs["Value"], sia.inputs[0])
+    sit = M('ADD', loc=(-340, -240)); L(o["temperature"], sit.inputs[0])
+    L(sia.outputs["Value"], sit.inputs[1])
+    silo = M('SUBTRACT', y=0.20, loc=(-500, -180))
+    L(gi.outputs["Ice Temp Threshold"], silo.inputs[0])
+    sir = MR((-340, -120), None, None, 0.0, 1.0, "sea ice")
+    sir.interpolation_type = 'SMOOTHSTEP'
+    L(sit.outputs["Value"], sir.inputs[0])
+    L(gi.outputs["Ice Temp Threshold"], sir.inputs[1])
+    L(silo.outputs["Value"], sir.inputs[2])
+    sif = M('MULTIPLY', loc=(-200, -300), nm="seaice", clamp=True)
+    L(sir.outputs["Result"], sif.inputs[0]); L(o["sea_mask"], sif.inputs[1])
+    seaice = N("ShaderNodeBsdfPrincipled"); seaice.location = (200, -300)
+    seaice.label = "SEA ICE"
+    L(isc.outputs["Vector"], seaice.inputs["Base Color"])
+    seaice.inputs["Roughness"].default_value = 0.42
+    seaice.inputs["IOR"].default_value = 1.31
+    mxi = N("ShaderNodeMixShader"); mxi.location = (520, 300); mxi.label = "SEA ICE"
+    L(sif.outputs["Value"], mxi.inputs[0])
+    L(mx.outputs["Shader"], mxi.inputs[1]); L(seaice.outputs["BSDF"], mxi.inputs[2])
+
     em = N("ShaderNodeEmission"); em.location = (400, 60); em.label = "TECH_EMIT"
     L(emsum.outputs["Vector"], em.inputs["Color"])
     em.inputs["Strength"].default_value = 1.0
     add = N("ShaderNodeAddShader"); add.location = (640, 200); add.label = "SURF+TECH"
-    L(mx.outputs["Shader"], add.inputs[0]); L(em.outputs["Emission"], add.inputs[1])
+    L(mxi.outputs["Shader"], add.inputs[0]); L(em.outputs["Emission"], add.inputs[1])
     L(add.outputs["Shader"], go.inputs["BSDF"])
 
     # --- micro-displacement
@@ -424,14 +521,11 @@ def build_surface(name="PLNT_SurfaceShader", sun_dir_obj=None, pos_attr=None):
     # group input defaulting to 0. Cycles constant-folds a constant-zero
     # branch away entirely, so unused features cost nothing at render time.
     try:
-        if __package__:
-            # Packaged: a path load would strip core's package context and
-            # its own `from .nodeutil` import would fail.
-            import importlib
-            surface_detail = importlib.import_module(".core.surface_detail", __package__)
-        else:
-            from core import surface_detail
+        from .core import surface_detail       # packaged extension
     except ImportError:
+      try:
+        from core import surface_detail
+      except ImportError:
         import importlib.util as _ilu
         _p = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                           "core", "surface_detail.py")

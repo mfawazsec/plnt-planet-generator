@@ -48,7 +48,7 @@ ATMO_IN = [
      "so the atmosphere flares when the planet is backlit"),
     ("Inner Radius", 'NodeSocketFloat', 1000.0, 1.0, 1e6,
      "Altitude at which the atmosphere begins; should sit at the surface"),
-    ("Outer Radius", 'NodeSocketFloat', 1030.0, 1.0, 1e6,
+    ("Outer Radius", 'NodeSocketFloat', 1020.0, 1.0, 1e6,
      "Top of the atmosphere. The gap to Inner Radius is the shell depth"),
     ("Falloff", 'NodeSocketFloat', 3.2, 0.1, 20.0,
      "How quickly the air thins with altitude. Sharp falloff gives a tight "
@@ -273,8 +273,32 @@ def _finish_surface(g, C):
     L(C["P"], capprox.inputs[0]); L(sockout(step, "Vector"), capprox.inputs[1])
     pn = VM('NORMALIZE', (-2200, -1160))
     L(sockout(capprox, "Vector"), pn.inputs[0])
+    # ...but only for rays that MISS the planet.
+    #
+    # A ray aimed near the middle of the disc has its perpendicular foot at
+    # the planet centre, so C collapses to (0,0,0) and normalising it returns
+    # zero. A zero sun dot lands mid-ramp on the terminator smoothstep, which
+    # means the entire disc was lit at roughly 40% regardless of where the sun
+    # actually was. On a day-side framing nobody notices; on a night-side one
+    # the atmosphere became a pale veil over the whole hemisphere, washing out
+    # city lights, lava and anything else the dark side was there to show.
+    #
+    # Those rays never see the far limb anyway: they are stopped by the
+    # surface, so all they cross is the air column in front of it, and the
+    # shell hit point P is the honest place to ask whether that column is in
+    # sunlight. LIM is already 1 exactly when the ray is blocked and 0 when it
+    # grazes past, so the geometry has handed us the blend for free.
+    pnP = VM('NORMALIZE', (-2200, -1320))
+    L(C["P"], pnP.inputs[0])
+    sampv = N("ShaderNodeMix"); sampv.data_type = 'VECTOR'
+    sampv.location = (-2100, -1240); sampv.label = "illum sample"
+    L(C["LIM"], sampv.inputs[0])
+    L(sockout(pn, "Vector"), sampv.inputs[4])
+    L(sockout(pnP, "Vector"), sampv.inputs[5])
+    sampn = VM('NORMALIZE', (-2060, -1160))
+    L(sampv.outputs[1], sampn.inputs[0])
     lam = VM('DOT_PRODUCT', (-2020, -1080), "sun dot")
-    L(sockout(pn, "Vector"), lam.inputs[0]); L(SUN, lam.inputs[1])
+    L(sockout(sampn, "Vector"), lam.inputs[0]); L(SUN, lam.inputs[1])
     # soft terminator: the day/night edge on air is gradual, not a hard line.
     # Narrower than the original -0.35..0.30 now that the sun angle is sampled
     # at a point that moves smoothly. The wide ramp was compensating for a
@@ -375,7 +399,8 @@ def make_material(matname="PLNT_Atmosphere", groupname="PLNT_AtmoShader",
     gn.node_tree = bpy.data.node_groups[groupname]
     gn.name = "PLNT_CTL"; gn.label = "PLNT_CTL"; gn.location = (0, 0)
     gn.inputs["Inner Radius"].default_value = radius
-    gn.inputs["Outer Radius"].default_value = radius * 1.03
+    # must match the shell mesh that plnt_atmos.make_atmo_object builds
+    gn.inputs["Outer Radius"].default_value = radius * 1.02
     out = nt.nodes.new("ShaderNodeOutputMaterial"); out.location = (320, 0)
     nt.links.new(gn.outputs["BSDF"], out.inputs["Surface"])
     # nothing is connected to Volume any more: that is the whole point.

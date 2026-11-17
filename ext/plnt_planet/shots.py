@@ -79,6 +79,13 @@ SHOTS = [
 
 
 def _presets():
+    # packaged extension: presets is a real sibling module
+    if __package__:
+        try:
+            import importlib as _il
+            return _il.import_module(".presets", __package__).__dict__
+        except Exception:
+            pass
     txt = bpy.data.texts.get("PLNT_presets.py")
     ns = {"__name__": "plnt_presets_mod"}
     exec(compile(txt.as_string(), "PLNT_presets.py", 'exec'), ns)

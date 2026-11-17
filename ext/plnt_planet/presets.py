@@ -81,109 +81,115 @@ def _obj(name):
 P = {}
 
 P["pristine_alien"] = dict(
-    globe=dict(**{"Continent Scale": 2.1, "Continent Coverage": 0.46, "Relief Strength": 78.0,
+    globe=dict(**{"Continent Scale": 2.1, "Continent Coverage": 0.46, "Relief Strength": 26.0,
                   "Mountain Sharpness": 0.72, "Erosion Amount": 0.62, "Sea Level": 0.0,
                   "Polar Cap Extent": 0.12, "Tectonic Belt Width": 0.26, "Warp Strength": 0.62}),
     surface={"Vegetation Hue": (0.230, 0.020, 0.075, 1), "Rock Hue": (0.145, 0.055, 0.058, 1),
              "Sand Hue": (0.330, 0.105, 0.090, 1), "Ice Brightness": 0.75,
-             "Ocean Shallow": (0.050, 0.180, 0.250, 1), "Ocean Deep": (0.004, 0.014, 0.045, 1),
-             "Shelf Boost": 1.25, "Vegetation Amount": 1.35, "River Tint": 0.95,
-             "Ice Temp Threshold": 0.16, "Patchiness": 0.45, "Tech Level": 0.0, "Vegetation Clumping": 0.85, "Foam Amount": 0.7, "Glint Variation": 0.6, "Strata Amount": 0.3},
+             # Teal-violet rather than Earth blue. The vegetation here is
+             # crimson, so a nitrogen-blue ocean underneath it reads as Earth
+             # with the land recoloured; shifting the water green in the
+             # shallows and indigo in the deeps makes the whole world foreign
+             # and separates it from the earthlike preset at a glance.
+             "Ocean Shallow": (0.030, 0.215, 0.205, 1), "Ocean Deep": (0.012, 0.010, 0.052, 1),
+             "Shelf Boost": 0.420, "Vegetation Amount": 1.35, "River Tint": 0.95,
+             "Ice Temp Threshold": 0.16, "Patchiness": 0.45, "Tech Level": 0.0, "Vegetation Clumping": 0.85, "Foam Amount": 0.160, "Glint Variation": 0.6, "Strata Amount": 0.3},
     clouds={"Cloud Coverage": 0.34, "Cloud Density": 1.1, "Band Strength": 0.42, "Detail Scale": 1.2},
-    atmo={"Density": 0.0092, "Atmo Colour": (0.30, 0.42, 1.0, 1), "Falloff": 3.0, "Pollution": 0.0},
+    atmo={"Density": 0.0336, "Atmo Colour": (0.36, 0.34, 1.0, 1), "Falloff": 3.0, "Pollution": 0.0},
     rings=False, orbital=0.0)
 
 P["earthlike"] = dict(
-    globe={"Continent Scale": 1.75, "Continent Coverage": 0.40, "Relief Strength": 68.0,
+    globe={"Continent Scale": 1.75, "Continent Coverage": 0.40, "Relief Strength": 22.7,
            "Mountain Sharpness": 0.58, "Erosion Amount": 0.38, "Sea Level": 0.0,
            "Polar Cap Extent": 0.20, "Tectonic Belt Width": 0.22, "Warp Strength": 0.46},
     surface={"Vegetation Hue": (0.072, 0.128, 0.040, 1), "Rock Hue": (0.190, 0.150, 0.115, 1),
              "Sand Hue": (0.455, 0.320, 0.168, 1), "Ice Brightness": 0.85,
              "Ocean Shallow": (0.045, 0.215, 0.275, 1), "Ocean Deep": (0.0030, 0.013, 0.038, 1),
-             "Shelf Boost": 1.15, "Vegetation Amount": 1.15, "River Tint": 0.55,
-             "Ice Temp Threshold": 0.21, "Patchiness": 0.35, "Tech Level": 0.0, "Glint Variation": 0.75, "Foam Amount": 0.85, "Vegetation Clumping": 0.55, "Strata Amount": 0.28, "Ice Crack Amount": 0.35},
+             "Shelf Boost": 0.386, "Vegetation Amount": 1.15, "River Tint": 0.55,
+             "Ice Temp Threshold": 0.21, "Patchiness": 0.35, "Tech Level": 0.0, "Glint Variation": 0.75, "Foam Amount": 0.195, "Vegetation Clumping": 0.55, "Strata Amount": 0.28, "Ice Crack Amount": 0.35},
     clouds={"Cloud Coverage": 0.62, "Cloud Density": 1.35, "Band Strength": 0.52, "Detail Scale": 1.25},
-    atmo={"Density": 0.0082, "Atmo Colour": (0.22, 0.44, 1.0, 1), "Falloff": 3.2, "Pollution": 0.0},
+    atmo={"Density": 0.0300, "Atmo Colour": (0.22, 0.44, 1.0, 1), "Falloff": 3.2, "Pollution": 0.0},
     rings=False, orbital=0.0)
 
 P["colonial_outpost"] = dict(
-    globe={"Continent Scale": 1.9, "Continent Coverage": 0.38, "Relief Strength": 72.0,
+    globe={"Continent Scale": 1.9, "Continent Coverage": 0.38, "Relief Strength": 24.0,
            "Mountain Sharpness": 0.60, "Erosion Amount": 0.40, "Sea Level": 0.0,
            "Polar Cap Extent": 0.24, "Tectonic Belt Width": 0.20, "Warp Strength": 0.50},
     surface={"Vegetation Hue": (0.070, 0.108, 0.048, 1), "Rock Hue": (0.180, 0.148, 0.118, 1),
              "Sand Hue": (0.420, 0.305, 0.172, 1), "Ice Brightness": 0.85,
              "Ocean Shallow": (0.042, 0.200, 0.260, 1), "Ocean Deep": (0.0030, 0.013, 0.038, 1),
-             "Shelf Boost": 1.10, "Vegetation Amount": 1.0, "River Tint": 0.60,
+             "Shelf Boost": 0.370, "Vegetation Amount": 1.0, "River Tint": 0.60,
              "Patchiness": 0.35, "Tech Level": 3.0, "Light Colour Temp": 0.12,
              "Urban Density": 1.65, "Night Light Intensity": 3.8,
-             "Road Network Visibility": 1.1, "Agriculture Coverage": 0.9, "Glint Variation": 0.55, "Foam Amount": 0.6, "Vegetation Clumping": 0.4, "Strata Amount": 0.35, "Dune Amount": 0.25},
+             "Road Network Visibility": 1.1, "Agriculture Coverage": 0.9, "Glint Variation": 0.55, "Foam Amount": 0.137, "Vegetation Clumping": 0.4, "Strata Amount": 0.35, "Dune Amount": 0.25},
     clouds={"Cloud Coverage": 0.50, "Cloud Density": 1.2, "Band Strength": 0.50, "Detail Scale": 1.2},
-    atmo={"Density": 0.0082, "Atmo Colour": (0.24, 0.44, 1.0, 1), "Falloff": 3.2, "Pollution": 0.05},
+    atmo={"Density": 0.0300, "Atmo Colour": (0.24, 0.44, 1.0, 1), "Falloff": 3.2, "Pollution": 0.05},
     rings=False, orbital=1.5)
 
 P["industrial_world"] = dict(
-    globe={"Continent Scale": 1.7, "Continent Coverage": 0.47, "Relief Strength": 62.0,
+    globe={"Continent Scale": 1.7, "Continent Coverage": 0.47, "Relief Strength": 20.7,
            "Mountain Sharpness": 0.50, "Erosion Amount": 0.34, "Sea Level": 0.0,
            "Polar Cap Extent": 0.16, "Tectonic Belt Width": 0.20, "Warp Strength": 0.44},
     surface={"Vegetation Hue": (0.078, 0.092, 0.044, 1), "Rock Hue": (0.170, 0.140, 0.115, 1),
              "Sand Hue": (0.400, 0.300, 0.180, 1), "Ice Brightness": 0.72,
              "Ocean Shallow": (0.052, 0.170, 0.190, 1), "Ocean Deep": (0.006, 0.014, 0.030, 1),
-             "Shelf Boost": 1.05, "Vegetation Amount": 0.60, "River Tint": 0.50,
+             "Shelf Boost": 0.353, "Vegetation Amount": 0.60, "River Tint": 0.50,
              "Patchiness": 0.30, "Tech Level": 6.0, "Light Colour Temp": 0.35,
              "Urban Density": 1.35, "Night Light Intensity": 1.5,
-             "Road Network Visibility": 1.4, "Agriculture Coverage": 1.2, "Glint Variation": 0.45, "Foam Amount": 0.5, "Strata Amount": 0.4},
+             "Road Network Visibility": 1.4, "Agriculture Coverage": 1.2, "Glint Variation": 0.45, "Foam Amount": 0.115, "Strata Amount": 0.4},
     clouds={"Cloud Coverage": 0.58, "Cloud Density": 1.3, "Band Strength": 0.55, "Detail Scale": 1.1},
-    atmo={"Density": 0.0135, "Atmo Colour": (0.34, 0.36, 0.62, 1), "Falloff": 2.6, "Pollution": 0.62},
+    atmo={"Density": 0.0493, "Atmo Colour": (0.34, 0.36, 0.62, 1), "Falloff": 2.6, "Pollution": 0.62},
     rings=False, orbital=4.0)
 
 P["hyperdeveloped"] = dict(
-    globe={"Continent Scale": 1.8, "Continent Coverage": 0.42, "Relief Strength": 58.0,
+    globe={"Continent Scale": 1.8, "Continent Coverage": 0.42, "Relief Strength": 19.3,
            "Mountain Sharpness": 0.45, "Erosion Amount": 0.30, "Sea Level": 0.0,
            "Polar Cap Extent": 0.18, "Tectonic Belt Width": 0.18, "Warp Strength": 0.46},
     surface={"Vegetation Hue": (0.060, 0.085, 0.058, 1), "Rock Hue": (0.140, 0.140, 0.140, 1),
              "Sand Hue": (0.300, 0.260, 0.200, 1), "Ice Brightness": 0.70,
              "Ocean Shallow": (0.030, 0.130, 0.180, 1), "Ocean Deep": (0.002, 0.008, 0.026, 1),
-             "Shelf Boost": 1.0, "Vegetation Amount": 0.55, "River Tint": 0.35,
+             "Shelf Boost": 0.336, "Vegetation Amount": 0.55, "River Tint": 0.35,
              "Patchiness": 0.18, "Tech Level": 9.0, "Light Colour Temp": 0.85,
-             "Urban Density": 1.5, "Night Light Intensity": 1.9,
-             "Grid Network Intensity": 1.5, "Megastructure Scale": 1.2, "Glint Variation": 0.4, "Foam Amount": 0.4, "Strata Amount": 0.25},
+             "Urban Density": 1.9, "Night Light Intensity": 2.6,
+             "Road Network Visibility": 1.4,
+             "Grid Network Intensity": 0.70, "Megastructure Scale": 1.2, "Glint Variation": 0.4, "Foam Amount": 0.092, "Strata Amount": 0.25},
     clouds={"Cloud Coverage": 0.36, "Cloud Density": 1.0, "Band Strength": 0.5, "Detail Scale": 1.1},
-    atmo={"Density": 0.0095, "Atmo Colour": (0.26, 0.44, 0.95, 1), "Falloff": 3.0, "Pollution": 0.28},
+    atmo={"Density": 0.0347, "Atmo Colour": (0.26, 0.44, 0.95, 1), "Falloff": 3.0, "Pollution": 0.28},
     rings=False, orbital=6.5,
     mega={"Mega Scale": 7.0, "Mirror Count": 140, "Mirror Size": 54.0,
           "Arc Count": 2, "Ring Sweep": 95.0, "Habitat Glow": 1.6,
           "Swarm Count": 320})
 
 P["megastructure"] = dict(
-    globe={"Continent Scale": 1.85, "Continent Coverage": 0.44, "Relief Strength": 55.0,
+    globe={"Continent Scale": 1.85, "Continent Coverage": 0.44, "Relief Strength": 18.3,
            "Mountain Sharpness": 0.42, "Erosion Amount": 0.28, "Sea Level": 0.0,
            "Polar Cap Extent": 0.16, "Tectonic Belt Width": 0.18, "Warp Strength": 0.48},
     surface={"Vegetation Hue": (0.055, 0.080, 0.062, 1), "Rock Hue": (0.130, 0.132, 0.136, 1),
              "Sand Hue": (0.270, 0.245, 0.205, 1), "Ice Brightness": 0.68,
              "Ocean Shallow": (0.026, 0.120, 0.170, 1), "Ocean Deep": (0.002, 0.007, 0.024, 1),
-             "Shelf Boost": 1.0, "Vegetation Amount": 0.45, "River Tint": 0.30,
+             "Shelf Boost": 0.336, "Vegetation Amount": 0.45, "River Tint": 0.30,
              "Patchiness": 0.14, "Tech Level": 10.0, "Light Colour Temp": 0.95,
              "Urban Density": 1.6, "Night Light Intensity": 2.0,
-             "Grid Network Intensity": 0.7, "Megastructure Scale": 1.6, "Glint Variation": 0.4, "Foam Amount": 0.35},
+             "Grid Network Intensity": 0.7, "Megastructure Scale": 1.6, "Glint Variation": 0.4, "Foam Amount": 0.080},
     clouds={"Cloud Coverage": 0.32, "Cloud Density": 0.95, "Band Strength": 0.5, "Detail Scale": 1.1},
-    atmo={"Density": 0.0090, "Atmo Colour": (0.28, 0.46, 1.0, 1), "Falloff": 3.0, "Pollution": 0.20},
+    atmo={"Density": 0.0329, "Atmo Colour": (0.28, 0.46, 1.0, 1), "Falloff": 3.0, "Pollution": 0.20},
     rings=False, orbital=10.0,
     mega={"Mega Scale": 9.5, "Mirror Count": 260, "Mirror Size": 72.0,
           "Arc Count": 4, "Ring Sweep": 165.0, "Ring Width": 180.0,
           "Habitat Glow": 2.4, "Swarm Count": 900})
 
 P["ringed_ice"] = dict(
-    globe={"Continent Scale": 1.6, "Continent Coverage": 0.34, "Relief Strength": 60.0,
+    globe={"Continent Scale": 1.6, "Continent Coverage": 0.34, "Relief Strength": 20.0,
            "Mountain Sharpness": 0.55, "Erosion Amount": 0.30, "Sea Level": 0.0,
            "Polar Cap Extent": 0.62, "Tectonic Belt Width": 0.22, "Warp Strength": 0.42},
     surface={"Vegetation Hue": (0.070, 0.100, 0.090, 1), "Rock Hue": (0.180, 0.185, 0.200, 1),
              "Sand Hue": (0.330, 0.330, 0.345, 1), "Ice Brightness": 1.25,
              "Ocean Shallow": (0.090, 0.230, 0.300, 1), "Ocean Deep": (0.006, 0.026, 0.060, 1),
-             "Shelf Boost": 1.30, "Vegetation Amount": 0.25, "River Tint": 0.40,
-             "Ice Temp Threshold": 0.46, "Patchiness": 0.24, "Tech Level": 0.0, "Ice Crack Amount": 0.9, "Foam Amount": 0.3, "Strata Amount": 0.2},
+             "Shelf Boost": 0.437, "Vegetation Amount": 0.25, "River Tint": 0.40,
+             "Ice Temp Threshold": 0.46, "Patchiness": 0.24, "Tech Level": 0.0, "Ice Crack Amount": 0.9, "Foam Amount": 0.069, "Strata Amount": 0.2},
     clouds={"Cloud Coverage": 0.55, "Cloud Density": 1.15, "Band Strength": 0.62, "Detail Scale": 1.0,
             "Cloud Colour": (0.94, 0.97, 1.0, 1)},
-    atmo={"Density": 0.0080, "Atmo Colour": (0.30, 0.52, 1.0, 1), "Falloff": 3.2, "Pollution": 0.0},
+    atmo={"Density": 0.0292, "Atmo Colour": (0.30, 0.52, 1.0, 1), "Falloff": 3.2, "Pollution": 0.0},
     rings=True, orbital=0.0,
     ring={"Gap Amount": 0.78, "Band Scale": 170.0, "Ring Density": 1.0,
           "Ring Colour": (0.80, 0.82, 0.86, 1),
@@ -197,98 +203,122 @@ P["ringed_ice"] = dict(
           "Forward Anisotropy": 0.70, "Forward Gain": 3.1})
 
 P["volcanic"] = dict(
-    globe={"Continent Scale": 2.3, "Continent Coverage": 0.66, "Relief Strength": 96.0,
+    globe={"Continent Scale": 2.3, "Continent Coverage": 0.66, "Relief Strength": 32.0,
            "Mountain Sharpness": 1.05, "Erosion Amount": 0.20, "Sea Level": 0.0,
            "Polar Cap Extent": 0.05, "Tectonic Belt Width": 0.40, "Warp Strength": 0.58},
     surface={"Vegetation Hue": (0.150, 0.030, 0.008, 1), "Rock Hue": (0.055, 0.040, 0.038, 1),
              "Sand Hue": (0.110, 0.070, 0.055, 1), "Ice Brightness": 0.0,
              "Ocean Shallow": (0.520, 0.130, 0.020, 1), "Ocean Deep": (0.240, 0.035, 0.004, 1),
-             "Shelf Boost": 2.4, "Vegetation Amount": 0.0, "River Tint": 1.6,
+             "Shelf Boost": 0.806, "Vegetation Amount": 0.0, "River Tint": 1.6,
              "Ice Temp Threshold": 0.0, "Patchiness": 0.50, "Tech Level": 0.0,
              "Lava Emission": 24.0, "Strata Amount": 0.7, "Crater Amount": 0.25, "Dune Amount": 0.2},
     clouds={"Cloud Coverage": 0.30, "Cloud Density": 1.5, "Band Strength": 0.45,
             "Detail Scale": 1.4, "Cloud Colour": (0.32, 0.24, 0.20, 1)},
-    atmo={"Density": 0.0150, "Atmo Colour": (0.62, 0.26, 0.10, 1), "Falloff": 2.4, "Pollution": 0.45},
+    atmo={"Density": 0.0548, "Atmo Colour": (0.62, 0.26, 0.10, 1), "Falloff": 2.4, "Pollution": 0.45},
     rings=False, orbital=0.0)
 
 P["frozen"] = dict(
-    globe={"Continent Scale": 1.7, "Continent Coverage": 0.44, "Relief Strength": 66.0,
+    globe={"Continent Scale": 1.7, "Continent Coverage": 0.44, "Relief Strength": 22.0,
            "Mountain Sharpness": 0.62, "Erosion Amount": 0.26, "Sea Level": 0.0,
-           "Polar Cap Extent": 0.86, "Tectonic Belt Width": 0.24, "Warp Strength": 0.44},
+           "Polar Cap Extent": 0.62, "Tectonic Belt Width": 0.24, "Warp Strength": 0.44},
     surface={"Vegetation Hue": (0.080, 0.100, 0.105, 1), "Rock Hue": (0.170, 0.178, 0.195, 1),
-             "Sand Hue": (0.320, 0.330, 0.350, 1), "Ice Brightness": 1.35,
+             "Sand Hue": (0.320, 0.330, 0.350, 1), "Ice Brightness": 1.05,
              "Ocean Shallow": (0.120, 0.250, 0.310, 1), "Ocean Deep": (0.010, 0.035, 0.075, 1),
-             "Shelf Boost": 1.4, "Vegetation Amount": 0.0, "River Tint": 0.30,
-             "Ice Temp Threshold": 0.72, "Patchiness": 0.18, "Tech Level": 0.0, "Ice Crack Amount": 0.85, "Strata Amount": 0.3},
+             "Shelf Boost": 0.470, "Vegetation Amount": 0.0, "River Tint": 0.30,
+             "Ice Temp Threshold": 0.50, "Patchiness": 0.18, "Tech Level": 0.0, "Ice Crack Amount": 0.85, "Strata Amount": 0.3},
     clouds={"Cloud Coverage": 0.48, "Cloud Density": 1.0, "Band Strength": 0.68, "Detail Scale": 0.9},
-    atmo={"Density": 0.0070, "Atmo Colour": (0.34, 0.56, 1.0, 1), "Falloff": 3.4, "Pollution": 0.0},
+    atmo={"Density": 0.0256, "Atmo Colour": (0.34, 0.56, 1.0, 1), "Falloff": 3.4, "Pollution": 0.0},
     rings=False, orbital=0.0)
 
 P["desert"] = dict(
-    globe={"Continent Scale": 1.55, "Continent Coverage": 0.80, "Relief Strength": 74.0,
+    globe={"Continent Scale": 1.55, "Continent Coverage": 0.80, "Relief Strength": 24.7,
            "Mountain Sharpness": 0.66, "Erosion Amount": 0.50, "Sea Level": 0.0,
            "Polar Cap Extent": 0.08, "Tectonic Belt Width": 0.30, "Warp Strength": 0.54},
     surface={"Vegetation Hue": (0.150, 0.130, 0.055, 1), "Rock Hue": (0.235, 0.150, 0.092, 1),
              "Sand Hue": (0.560, 0.395, 0.205, 1), "Ice Brightness": 0.55,
              "Ocean Shallow": (0.080, 0.190, 0.190, 1), "Ocean Deep": (0.010, 0.028, 0.045, 1),
-             "Shelf Boost": 1.2, "Vegetation Amount": 0.16, "River Tint": 0.75,
+             "Shelf Boost": 0.403, "Vegetation Amount": 0.16, "River Tint": 0.75,
              "Ice Temp Threshold": 0.10, "Patchiness": 0.48, "Tech Level": 2.0,
              "Light Colour Temp": 0.15, "Urban Density": 0.7, "Dune Amount": 0.95, "Dune Scale": 300.0, "Strata Amount": 0.32, "Crater Amount": 0.15},
-    clouds={"Cloud Coverage": 0.16, "Cloud Density": 0.8, "Band Strength": 0.40, "Detail Scale": 1.3,
-            "Cloud Colour": (1.0, 0.95, 0.88, 1)},
-    atmo={"Density": 0.0105, "Atmo Colour": (0.60, 0.42, 0.30, 1), "Falloff": 2.8, "Pollution": 0.22},
+    # The deck is dust, not water. Mars' storms organise into latitude bands
+    # and lift enough material that the limb haze stays bright to ~20 km and
+    # stratifies above it, so coverage and density both go up, the colour goes
+    # to suspended ochre, and a little Belt Contrast gives the storm fronts
+    # somewhere to sit.
+    clouds={"Cloud Coverage": 0.44, "Cloud Density": 1.7, "Band Strength": 0.72, "Detail Scale": 1.7,
+            "Cloud Colour": (0.88, 0.66, 0.42, 1), "Belt Contrast": 0.30,
+            "Belt Frequency": 9.0, "Belt Colour": (0.62, 0.40, 0.24, 1)},
+    atmo={"Density": 0.0760, "Atmo Colour": (0.66, 0.40, 0.24, 1), "Falloff": 2.2, "Pollution": 0.55},
     rings=False, orbital=0.5)
 
 P["ocean_world"] = dict(
-    globe={"Continent Scale": 1.45, "Continent Coverage": 0.11, "Relief Strength": 52.0,
+    globe={"Continent Scale": 1.45, "Continent Coverage": 0.11, "Relief Strength": 17.3,
            "Mountain Sharpness": 0.50, "Erosion Amount": 0.30, "Sea Level": 0.0,
            "Polar Cap Extent": 0.22, "Tectonic Belt Width": 0.20, "Warp Strength": 0.50},
     surface={"Vegetation Hue": (0.062, 0.120, 0.055, 1), "Rock Hue": (0.170, 0.145, 0.115, 1),
              "Sand Hue": (0.470, 0.360, 0.210, 1), "Ice Brightness": 0.90,
              "Ocean Shallow": (0.040, 0.235, 0.300, 1), "Ocean Deep": (0.0020, 0.010, 0.034, 1),
-             "Shelf Boost": 1.5, "Vegetation Amount": 1.2, "River Tint": 0.50,
-             "Patchiness": 0.30, "Tech Level": 1.0, "Light Colour Temp": 0.3, "Glint Variation": 1.0, "Foam Amount": 1.0, "Vegetation Clumping": 0.3},
+             "Shelf Boost": 0.504, "Vegetation Amount": 1.2, "River Tint": 0.50,
+             "Patchiness": 0.30, "Tech Level": 1.0, "Light Colour Temp": 0.3, "Glint Variation": 1.0, "Foam Amount": 0.229, "Vegetation Clumping": 0.3},
     clouds={"Cloud Coverage": 0.55, "Cloud Density": 1.2, "Band Strength": 0.58, "Detail Scale": 1.2},
-    atmo={"Density": 0.0085, "Atmo Colour": (0.20, 0.44, 1.0, 1), "Falloff": 3.2, "Pollution": 0.0},
+    atmo={"Density": 0.0311, "Atmo Colour": (0.20, 0.44, 1.0, 1), "Falloff": 3.2, "Pollution": 0.0},
     rings=False, orbital=0.6)
 
 P["dead_moon"] = dict(
-    globe={"Continent Scale": 2.0, "Continent Coverage": 0.95, "Relief Strength": 88.0,
+    globe={"Continent Scale": 2.0, "Continent Coverage": 0.95, "Relief Strength": 29.3,
            "Mountain Sharpness": 0.85, "Erosion Amount": 0.10, "Sea Level": -1.0,
            "Polar Cap Extent": 0.0, "Tectonic Belt Width": 0.34, "Warp Strength": 0.40},
     surface={"Vegetation Hue": (0.10, 0.10, 0.10, 1), "Rock Hue": (0.115, 0.112, 0.108, 1),
              "Sand Hue": (0.185, 0.180, 0.172, 1), "Ice Brightness": 0.0,
              "Ocean Shallow": (0.05, 0.05, 0.05, 1), "Ocean Deep": (0.02, 0.02, 0.02, 1),
-             "Shelf Boost": 1.0, "Vegetation Amount": 0.0, "River Tint": 0.0,
+             "Shelf Boost": 0.336, "Vegetation Amount": 0.0, "River Tint": 0.0,
              "Ice Temp Threshold": 0.0, "Patchiness": 0.42, "Tech Level": 0.0,
-             "Micro Disp Height": 3.4, "Crater Amount": 0.95, "Crater Scale": 30.0, "Strata Amount": 0.45},
+             # Matched against LRO: bright highlands saturated with impacts,
+             # dark basalt seas over roughly a fifth of the surface carrying a
+             # fraction of the craters, and rays off the youngest few. Strata
+             # drops right down -- bedding planes are a sedimentary feature and
+             # an airless basalt moon has no business showing them.
+             "Micro Disp Height": 0.534, "Crater Amount": 0.95, "Crater Scale": 26.0,
+             "Maria Amount": 0.90, "Maria Scale": 1.4, "Crater Ray Amount": 0.75,
+             "Strata Amount": 0.08},
     clouds={"Cloud Coverage": 0.0, "Cloud Density": 0.0, "Band Strength": 0.5, "Detail Scale": 1.0},
-    atmo={"Density": 0.0006, "Atmo Colour": (0.5, 0.5, 0.5, 1), "Falloff": 4.0, "Pollution": 0.0},
+    atmo={"Density": 0.0022, "Atmo Colour": (0.5, 0.5, 0.5, 1), "Falloff": 4.0, "Pollution": 0.0},
     rings=False, orbital=0.0)
 
 P["gas_giant"] = dict(
-    globe={"Continent Scale": 1.2, "Continent Coverage": 0.02, "Relief Strength": 2.0,
+    globe={"Continent Scale": 1.2, "Continent Coverage": 0.02, "Relief Strength": 0.7,
            "Mountain Sharpness": 0.2, "Erosion Amount": 0.0, "Sea Level": 0.0,
            "Polar Cap Extent": 0.30, "Tectonic Belt Width": 0.2, "Warp Strength": 0.9},
     surface={"Vegetation Hue": (0.30, 0.22, 0.14, 1), "Rock Hue": (0.34, 0.26, 0.18, 1),
              "Sand Hue": (0.42, 0.32, 0.22, 1), "Ice Brightness": 0.4,
              "Ocean Shallow": (0.46, 0.36, 0.26, 1), "Ocean Deep": (0.30, 0.22, 0.15, 1),
-             "Shelf Boost": 1.0, "Vegetation Amount": 0.0, "River Tint": 0.0,
+             "Shelf Boost": 0.336, "Vegetation Amount": 0.0, "River Tint": 0.0,
              "Ice Temp Threshold": 0.0, "Patchiness": 0.2, "Tech Level": 0.0,
-             "Micro Disp Height": 0.0},
+             "Micro Disp Height": 0.000},
     # gas giants read through their cloud deck: heavy banding, full coverage
-    clouds={"Cloud Coverage": 0.98, "Cloud Density": 2.4, "Band Strength": 1.0,
-            "Detail Scale": 0.55, "Cloud Colour": (0.86, 0.74, 0.58, 1)},
-    atmo={"Density": 0.0180, "Atmo Colour": (0.62, 0.50, 0.34, 1), "Falloff": 2.2, "Pollution": 0.0},
+    # Zones pale, belts dark: the colour alternation is the planet, and
+    # coverage is pulled off the ceiling so the bands have somewhere to end.
+    # Colour comes off Juno imagery rather than off the memory of a textbook
+    # illustration: the zones are pale and faintly BLUE, not cream, and the
+    # belts are rust. Putting a warm cream against a warm brown is what made
+    # this planet one colour with stripes in it.
+    clouds={"Cloud Coverage": 0.96, "Cloud Density": 2.4, "Band Strength": 1.0,
+            "Detail Scale": 0.55, "Cloud Colour": (0.72, 0.77, 0.82, 1),
+            "Belt Contrast": 1.0, "Belt Frequency": 23.0,
+            "Belt Colour": (0.33, 0.18, 0.09, 1),
+            # Boundaries as vortex trains, convective cells across the whole
+            # disc, and a scattering of white ovals.
+            "Belt Turbulence": 0.75, "Eddy Scale": 11.0, "Storm Amount": 0.70},
+    atmo={"Density": 0.0658, "Atmo Colour": (0.56, 0.53, 0.50, 1), "Falloff": 2.2, "Pollution": 0.0},
     rings=True, orbital=0.0,
-    ring={"Gap Amount": 0.72, "Band Scale": 140.0, "Ring Density": 0.9,
+    ring={"Gap Amount": 0.52, "Band Scale": 170.0, "Ring Density": 1.45,
           "Ring Colour": (0.74, 0.70, 0.62, 1),
           # dustier, warmer, less sharply divided than the ice rings
           "Ice Colour": (0.80, 0.78, 0.74, 1), "Dust Colour": (0.60, 0.48, 0.34, 1),
           "Rock Colour": (0.36, 0.30, 0.24, 1), "Composition Scale": 2.8,
-          "Band Contrast": 1.7, "Gap Softness": 0.24, "Division Depth": 0.75,
-          "Spiral Arms": 5.0, "Spiral Strength": 0.18, "Spiral Winding": 38.0,
-          "Wake Strength": 0.25, "Wake Count": 90.0,
+          "Band Contrast": 2.3, "Gap Softness": 0.16, "Division Depth": 0.95,
+          "Spiral Arms": 7.0, "Spiral Strength": 0.30, "Spiral Winding": 52.0,
+          "Wake Strength": 0.48, "Wake Count": 150.0,
           "Clump Scale": 4.5, "Clump Strength": 0.38,
           "Forward Anisotropy": 0.58, "Forward Gain": 2.2})
 
@@ -301,9 +331,9 @@ LOOK_DEFAULTS = {
     "Vegetation Hue": (0.078, 0.135, 0.042, 1), "Rock Hue": (0.190, 0.150, 0.115, 1),
     "Sand Hue": (0.455, 0.320, 0.168, 1), "Ice Brightness": 0.80,
     "Ocean Shallow": (0.045, 0.215, 0.275, 1), "Ocean Deep": (0.0035, 0.014, 0.040, 1),
-    "Shelf Boost": 1.10, "Slope Rock Threshold": 0.26, "Vegetation Amount": 1.0,
+    "Shelf Boost": 0.370, "Slope Rock Threshold": 0.26, "Vegetation Amount": 1.0,
     "Ice Temp Threshold": 0.20, "River Tint": 0.30, "Patchiness": 0.35,
-    "Lava Emission": 0.0, "Micro Disp Height": 2.2, "Micro Disp Scale": 145.0,
+    "Lava Emission": 0.0, "Micro Disp Height": 0.345, "Micro Disp Scale": 300,
     "Tech Level": 0.0, "Urban Density": 1.0, "Night Light Intensity": 1.0,
     "Light Colour Temp": 0.5, "Road Network Visibility": 1.0,
     "Agriculture Coverage": 1.0, "Grid Network Intensity": 1.0,
@@ -313,16 +343,18 @@ LOOK_DEFAULTS = {
     # preset, and any socket missing from it keeps whatever the previous
     # preset left behind. That is the bug that put a salmon ocean on five
     # consecutive shots after the volcanic preset set Lava Emission to 9.
-    "Glint Variation": 0.0, "Foam Amount": 0.0,
+    "Glint Variation": 0.0, "Foam Amount": 0.000,
     "Dune Amount": 0.0, "Dune Scale": 260.0,
     "Strata Amount": 0.0, "Strata Frequency": 90.0,
     "Ice Crack Amount": 0.0, "Vegetation Clumping": 0.0,
     "Crater Amount": 0.0, "Crater Scale": 34.0,
+    "Maria Amount": 0.0, "Maria Scale": 2.2, "Crater Ray Amount": 0.0,
 }
 CLOUD_DEFAULTS = {"Cloud Coverage": 0.55, "Cloud Density": 1.25, "Band Strength": 0.52,
                   "Detail Scale": 1.2, "Cloud Colour": (1.0, 1.0, 1.0, 1),
-                  "Cloud Relief": 0.30}
-ATMO_DEFAULTS = {"Density": 0.0080, "Atmo Colour": (0.22, 0.44, 1.0, 1),
+                  "Cloud Relief": 0.30, "Belt Contrast": 0.0,
+                  "Belt Frequency": 16.0, "Belt Colour": (0.55, 0.42, 0.30, 1)}
+ATMO_DEFAULTS = {"Density": 0.0292, "Atmo Colour": (0.22, 0.44, 1.0, 1),
                  "Anisotropy": 0.3, "Falloff": 3.2, "Pollution": 0.0,
                  # 0.02 lifted the whole night hemisphere into a visible
                  # blue-grey veil that flattened the city lights against it.

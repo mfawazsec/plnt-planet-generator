@@ -110,7 +110,11 @@ def add_tech_layer(g, F, gi, albedo_sock, rough_sock, nrm_sock, sun_dir_obj):
     L(o["habitability"], habg.inputs[0])
     cs = M('MULTIPLY', y=60.0, loc=(X0, -460)); cs.inputs[0].default_value = 2.6
     cv = VOR((X0 + 200, -300), 'F1', '4D', "citycells")
-    cv.inputs["Scale"].default_value = 27.0
+    # 27 cells across the sphere put roughly a dozen cities on a visible
+    # hemisphere, which reads as a scatter of isolated dots rather than as a
+    # settled world. 40 is about 90 sites globally: still countable, but dense
+    # enough that neighbouring cores and their roads form clusters.
+    cv.inputs["Scale"].default_value = 40.0
     L(nrm_sock, cv.inputs["Vector"])
     csw = M('MULTIPLY', y=5.13, loc=(X0, -620)); L(gi.outputs["Seed"], csw.inputs[0])
     cswa = M('ADD', y=23.9, loc=(X0 + 160, -620)); L(csw.outputs["Value"], cswa.inputs[0])
@@ -267,7 +271,12 @@ def add_tech_layer(g, F, gi, albedo_sock, rough_sock, nrm_sock, sun_dir_obj):
     L(gs2.outputs["Value"], gcomb.inputs[1])
     L(gcomb.outputs["Vector"], rot.inputs["Rotation"])
 
-    AXES = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (0.577, 0.577, 0.577), (-0.707, 0.707, 0.0)]
+    # Five great circles plus three small ones is eight full rings wrapped
+    # round the globe, and on a night side that reads as a wireframe cage
+    # drawn over the cities rather than as orbital engineering above them.
+    # Three and two leave the same idea legible with the surface still
+    # visible through it.
+    AXES = [(1, 0, 0), (0, 1, 0), (0.577, 0.577, 0.577)]
     prev = None
     yy = -1300
     for i, ax in enumerate(AXES):
@@ -293,7 +302,7 @@ def add_tech_layer(g, F, gi, albedo_sock, rough_sock, nrm_sock, sun_dir_obj):
         yy -= 170
 
     # ring nodes: small circles at fixed polar angles
-    for j, c in enumerate((0.35, 0.62, 0.85)):
+    for j, c in enumerate((0.35, 0.72)):
         av = N("ShaderNodeCombineXYZ"); av.location = (X0 + 380, yy)
         av.inputs[0].default_value = 0.577; av.inputs[1].default_value = -0.577
         av.inputs[2].default_value = 0.577
@@ -393,7 +402,11 @@ def add_tech_layer(g, F, gi, albedo_sock, rough_sock, nrm_sock, sun_dir_obj):
     gbase = M('ADD', y=0.45, loc=(X0 + 1880, 300)); L(gnight.outputs["Value"], gbase.inputs[0])
     gg = M('MULTIPLY', loc=(X0 + 2060, 300))
     L(grid.outputs["Value"], gg.inputs[0]); L(gbase.outputs["Value"], gg.inputs[1])
-    ggain = M('MULTIPLY', y=6.0, loc=(X0 + 2240, 300)); L(gg.outputs["Value"], ggain.inputs[0])
+    # A city core is a handful of pixels; an arc is an unbroken line around
+    # the whole planet. At the same nominal gain the arcs carry many times the
+    # integrated light and win the frame outright, so they are gained well
+    # below the 26.0 the city cores get.
+    ggain = M('MULTIPLY', y=2.4, loc=(X0 + 2240, 300)); L(gg.outputs["Value"], ggain.inputs[0])
     gem = N("ShaderNodeVectorMath"); gem.operation = 'SCALE'; gem.location = (X0 + 2420, 300)
     gcol = N("ShaderNodeRGB"); gcol.location = (X0 + 2240, 140)
     gcol.outputs[0].default_value = GRIDCOL

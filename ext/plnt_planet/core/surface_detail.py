@@ -47,6 +47,16 @@ DETAIL_IN = [
      "Impact craters with raised rims. For airless worlds and dead moons"),
     ("Crater Scale", 34.0, 1.0, 400.0,
      "How many craters there are; higher values give smaller, denser craters"),
+    ("Maria Amount", 0.0, 0.0, 1.0,
+     "Dark volcanic plains flooding the low ground between the highlands, as "
+     "on Earth's Moon. They are younger than the terrain around them, so they "
+     "are darker, smoother and far less cratered, and that contrast is most "
+     "of what makes a real moon look like a real moon"),
+    ("Maria Scale", 2.2, 0.2, 20.0,
+     "Size of the flooded basins; lower values give fewer, larger seas"),
+    ("Crater Ray Amount", 0.0, 0.0, 1.0,
+     "Bright ejecta rays thrown radially from the youngest large craters, "
+     "crossing everything they land on"),
 ]
 
 
@@ -187,12 +197,23 @@ def ocean_glint(tree, B, S, P):
     comb = B.M('MULTIPLY', label="glint mix")
     B.L(sockout(wind, "Fac"), comb.inputs[0])
     B.L(sockout(slick, "Fac"), comb.inputs[1])
-    # Floor at 0.08. Below about 0.06 a curved water surface under a distant
-    # sun returns the specular highlight as a handful of single bright pixels
-    # that denoising cannot resolve into anything: shot 04 showed the glint as
-    # a hard white dot rather than a sheet of light. 0.08 to 0.14 keeps the
-    # glint as a glint and still varies with wind.
-    rng = B.MR(0.12, 0.72, 0.080, 0.140, "glint roughness")
+    # 0.05 to 0.095 is a mirror, and the sea is not one. Cox and Munk measured
+    # the slope distribution of the ocean surface from sun glitter in 1954: an
+    # RMS slope around 0.1 to 0.2 radians at moderate wind, which is a GGX
+    # roughness in the region of 0.2 to 0.4, not 0.07. The difference is
+    # visible and it is not subtle -- at 0.07 a bright object above the water
+    # reflects as a recognisable IMAGE of itself, so an orbital structure
+    # appeared mirrored on the night side complete with its window cutouts,
+    # which is a thing no ocean has ever done. A real sea scatters it into a
+    # glitter path.
+    #
+    # The range below is still conservative against that measurement, because
+    # the wave normals underneath carry part of the spread and because a wider
+    # lobe integrates across more of the adaptive-subdivision cage -- which is
+    # what put a hexagonal lattice inside the glint the first time this was
+    # widened. That artefact is a tessellation problem: the shots that live on
+    # their glint dice finer rather than accepting a mirror.
+    rng = B.MR(0.12, 0.72, 0.105, 0.265, "glint roughness")
     B.L(comb.outputs[0], rng.inputs[0])
     # blend from the shipped constant so Glint Variation = 0 is unchanged
     blend = B.MR(0.0, 1.0, 0.08, 0.0, "glint blend")
@@ -213,6 +234,22 @@ def ocean_glint(tree, B, S, P):
         an = B.M('MULTIPLY', y=0.45, label="anisotropy")
         B.L(S["Glint Variation"], an.inputs[0])
         B.L(an.outputs[0], sockin(ocean, "Anisotropic"))
+
+    # Wave normals. The ocean is the displaced seabed shaded as water, with
+    # nothing on its Normal input, so the sea was a geometrically perfect
+    # sphere and the glint had no structure at all. A fine bump gives the
+    # highlight its glitter and breaks up the dicing facets described above.
+    nrm_in = sockin(ocean, "Normal")
+    if not nrm_in.links:
+        wave = B.noise('4D', 'FBM', 8.0, "wave normals")
+        sockin(wave, "Scale").default_value = 900.0
+        sockin(wave, "Roughness").default_value = 0.55
+        B.L(P, sockin(wave, "Vector"))
+        wb = B.N("ShaderNodeBump", "wave bump")
+        wb.inputs["Strength"].default_value = 0.30
+        wb.inputs["Distance"].default_value = 0.0025
+        B.L(sockout(wave, "Fac"), wb.inputs["Height"])
+        B.L(wb.outputs["Normal"], nrm_in)
     return "ocean_glint"
 
 
@@ -220,12 +257,17 @@ def coastal_foam(tree, B, S, P, FIELD):
     """White water in the shallow band along every coast."""
     ocean = need(tree, "OCEAN")
     depth = sockout(FIELD, "ocean_depth")
-    band = B.MR(0.0, 0.055, 1.0, 0.0, "foam band", 'SMOOTHSTEP')
+    # A scale-62 noise through a 0.42-0.62 gate quantises into binary dots:
+    # from orbit every coastline came out ringed with speckle rather than
+    # surf. Finer grain and a much softer gate read as white water, and the
+    # band itself was 0.055 of the depth field, a surf zone hundreds of km
+    # wide.
+    band = B.MR(0.0, 0.022, 1.0, 0.0, "foam band", 'SMOOTHSTEP')
     B.L(depth, band.inputs[0])
-    brk = B.noise('4D', 'FBM', 7.0, "foam breakup")
-    sockin(brk, "Scale").default_value = 62.0
+    brk = B.noise('4D', 'FBM', 5.0, "foam breakup")
+    sockin(brk, "Scale").default_value = 190.0
     B.L(P, sockin(brk, "Vector"))
-    bg = B.MR(0.42, 0.62, 0.0, 1.0, "foam gate")
+    bg = B.MR(0.30, 0.80, 0.0, 1.0, "foam gate")
     B.L(sockout(brk, "Fac"), bg.inputs[0])
     m1 = B.M('MULTIPLY', label="foam mask")
     B.L(band.outputs["Result"], m1.inputs[0])
@@ -344,8 +386,17 @@ def rock_strata(tree, B, S, P, FIELD):
 
     consumers = splice(tree, rockcol, 2)
     tone = B.mix("strata tone")
-    # a tint above ~1.15 reads as painted-on contour lines rather than bedding
-    tone.inputs[7].default_value = (1.13, 1.06, 0.97, 1.0)
+    # MULTIPLY, not a mix toward an absolute colour.
+    #
+    # Blending rock toward a fixed near-white tint makes the strength of the
+    # banding depend on how dark the rock underneath happens to be. On desert
+    # sand at 0.42 albedo that is a believable 2.7x step between layers; on a
+    # dead moon at 0.115 it is a 10x step, and the bedding comes back as white
+    # ribbons painted over grey basalt. Scaling the rock colour instead keeps
+    # the ratio between a hard layer and a soft one the same on every world,
+    # which is what bedding actually looks like.
+    tone.blend_type = 'MULTIPLY'
+    tone.inputs[7].default_value = (1.32, 1.24, 1.13, 1.0)
     B.L(amt.outputs[0], tone.inputs[0])
     B.L(rockcol.outputs[2], tone.inputs[6])
     reconnect(tree, tone.outputs[2], consumers)
@@ -369,25 +420,193 @@ def ice_cracks(tree, B, S, P, FIELD):
     glacier flow.
     """
     icecol = need(tree, "icecol")
+    # 4.2 was too much. Squashing the sample coordinate that hard turns every
+    # cell into a 4:1 ribbon running the same way over the whole planet, which
+    # reads as a stretched texture rather than as ice -- and pack ice at a
+    # margin is roughly equidimensional anyway. Flow lines belong to glaciers,
+    # not to the whole cryosphere, so the anisotropy comes down and a warp
+    # gives the remaining direction somewhere to bend.
+    warp = B.noise('3D', 'FBM', 3.0, "ice flow warp")
+    sockin(warp, "Scale").default_value = 2.4
+    B.L(P, sockin(warp, "Vector"))
+    wc = B.VM('SUBTRACT', "ice warp centred")
+    B.L(sockout(warp, "Color"), wc.inputs[0])
+    wc.inputs[1].default_value = (0.5, 0.5, 0.5)
+    ws = B.VM('SCALE', "ice warp amount")
+    B.L(sockout(wc, "Vector"), ws.inputs[0])
+    sockin(ws, "Scale").default_value = 0.16
+    pw = B.VM('ADD', "ice warped coords")
+    B.L(P, pw.inputs[0])
+    B.L(sockout(ws, "Vector"), pw.inputs[1])
+
     stretch = B.VM('MULTIPLY', "ice stretch")
-    stretch.inputs[1].default_value = (1.0, 1.0, 4.2)
-    B.L(P, stretch.inputs[0])
+    stretch.inputs[1].default_value = (1.0, 1.0, 1.9)
+    B.L(sockout(pw, "Vector"), stretch.inputs[0])
     vor = B.voronoi('4D', 'DISTANCE_TO_EDGE', "ice cracks")
     sockin(vor, "Scale").default_value = 46.0
     sockin(vor, "Randomness").default_value = 1.0
     B.L(sockout(stretch, "Vector"), sockin(vor, "Vector"))
-    edge = B.MR(0.0, 0.030, 1.0, 0.0, "crack width")
+    # 0.030 of a Voronoi cell is a hairline that all but vanishes against ice
+    # at any Ice Brightness above 1, which is every preset that wants cracks in
+    # the first place. Europa's lineae are tens of km wide on a 3000 km moon.
+    edge = B.MR(0.0, 0.055, 1.0, 0.0, "crack width")
     B.L(sockout(vor, "Distance"), edge.inputs[0])
+    # A second, coarser and unstretched set: an ice sheet breaks at more than
+    # one scale, and one scale in one direction is what made the first version
+    # look like a printed pattern.
+    vor2 = B.voronoi('4D', 'DISTANCE_TO_EDGE', "ice plates")
+    sockin(vor2, "Scale").default_value = 13.0
+    sockin(vor2, "Randomness").default_value = 1.0
+    B.L(sockout(pw, "Vector"), sockin(vor2, "Vector"))
+    edge2 = B.MR(0.0, 0.030, 0.75, 0.0, "plate width")
+    B.L(sockout(vor2, "Distance"), edge2.inputs[0])
+    both = B.M('MAXIMUM', label="crack layers")
+    B.L(edge.outputs["Result"], both.inputs[0])
+    B.L(edge2.outputs["Result"], both.inputs[1])
     amt = B.M('MULTIPLY', label="crack amt")
-    B.L(edge.outputs["Result"], amt.inputs[0])
+    B.L(both.outputs[0], amt.inputs[0])
     B.L(S["Ice Crack Amount"], amt.inputs[1])
     consumers = splice(tree, icecol, 2)
     dark = B.mix("crack colour")
-    dark.inputs[7].default_value = (0.42, 0.52, 0.62, 1.0)
+    dark.inputs[7].default_value = (0.30, 0.40, 0.53, 1.0)
     B.L(amt.outputs[0], dark.inputs[0])
     B.L(icecol.outputs[2], dark.inputs[6])
     reconnect(tree, dark.outputs[2], consumers)
     return "ice_cracks"
+
+
+def lunar_maria(tree, B, S, P, FIELD):
+    """Dark flooded plains and bright ejecta rays.
+
+    A moon with one albedo and one crater density everywhere reads as a golf
+    ball no matter how good the craters are. Earth's Moon is two terrains: old
+    bright highlands, saturated with impacts, and younger basalt seas that
+    flooded the low ground, are about half as bright and carry a fraction of
+    the craters. Rays are the other half of the story -- ejecta thrown from the
+    youngest large impacts, ignoring whatever terrain they land on.
+
+    Runs after craters() and reuses that function's fine Voronoi rather than
+    evaluating a second one, so the rays come off the same craters the relief
+    was built from instead of floating free of them.
+    """
+    # Spliced into the combined land albedo, NOT into `rockcol`.
+    #
+    # rockcol is only the rock branch, and the rock branch is gated by slope.
+    # Darkening it paints the seas onto whatever happens to be steep, so the
+    # maria came out as ribbons tracing valley walls instead of as flooded
+    # basins. ">rock" is the mix after sand, vegetation and rock have been
+    # combined, which is the first point where the whole ground is one colour.
+    land = need(tree, ">rock")
+    vor = find(tree, "crater cells fine")
+
+    # ---- maria mask -------------------------------------------------------
+    # Deliberately few octaves. A narrow threshold across a detailed fractal
+    # slices it into coastline filaments -- tendrils spidering over the whole
+    # globe, which is what the first pass drew and is nothing like a flooded
+    # basin. Two octaves give a smooth field whose level set is a small number
+    # of solid, closed regions, and the sharp threshold then gives them the
+    # abrupt shoreline a lava flood actually leaves.
+    mn = B.noise('4D', 'FBM', 1.6, "maria field")
+    B.L(P, sockin(mn, "Vector"))
+    B.L(S["Maria Scale"], sockin(mn, "Scale"))
+    sockin(mn, "Roughness").default_value = 0.42
+    # A narrow threshold gives contiguous seas with coastlines rather than a
+    # soft grey wash. Around a fifth of the surface, which is close to the
+    # Moon's 17%.
+    mk = B.MR(0.530, 0.575, 0.0, 1.0, "maria mask", 'SMOOTHSTEP')
+    B.L(sockout(mn, "Fac"), mk.inputs[0])
+    maria = B.M('MULTIPLY', label="maria", clamp=True)
+    B.L(mk.outputs["Result"], maria.inputs[0])
+    B.L(S["Maria Amount"], maria.inputs[1])
+
+    # ---- fewer craters on the plains --------------------------------------
+    # The seas flooded after most of the bombardment, so they record only what
+    # has hit them since. Suppressing the profile rather than the count keeps
+    # a few large ones, which is what the real maria show.
+    layers = find(tree, "crater layers")
+    if layers is not None:
+        keep = B.MR(0.0, 1.0, 1.0, 0.22, "maria crater keep")
+        B.L(maria.outputs[0], keep.inputs[0])
+        cconsumers = splice(tree, layers, 0)
+        cs = B.M('MULTIPLY', label="craters x maria")
+        B.L(layers.outputs[0], cs.inputs[0])
+        B.L(keep.outputs["Result"], cs.inputs[1])
+        reconnect(tree, cs.outputs[0], cconsumers)
+
+    # ---- rays -------------------------------------------------------------
+    rays = None
+    if vor is not None:
+        v = B.VM('SUBTRACT', "ray vector")
+        B.L(P, v.inputs[0])
+        B.L(sockout(vor, "Position"), v.inputs[1])
+        rlen0 = B.VM('LENGTH', "ray radius")
+        B.L(sockout(v, "Vector"), rlen0.inputs[0])
+        # Voronoi hands back Position in the INPUT space, so this distance is
+        # in unit-sphere units while a crater cell is only about 1/Crater
+        # Scale across. Measured in those units a ray a couple of cells long
+        # reaches a third of the way round the moon, which is what the first
+        # pass drew. Rescale into cell widths and the reach numbers below mean
+        # what they say: rays start outside the rim and are gone within a few
+        # crater radii.
+        rlen = B.M('MULTIPLY', label="ray radius cells")
+        B.L(rlen0.outputs["Value"], rlen.inputs[0])
+        B.L(S["Crater Scale"], rlen.inputs[1])
+        rdir = B.VM('NORMALIZE', "ray direction")
+        B.L(sockout(v, "Vector"), rdir.inputs[0])
+        # Streaks are angular: a noise sampled on the DIRECTION alone varies
+        # around the crater and not along the way out from it, which is what
+        # makes a ray a ray instead of a blotch.
+        rsc = B.VM('SCALE', "ray fan")
+        B.L(sockout(rdir, "Vector"), rsc.inputs[0])
+        sockin(rsc, "Scale").default_value = 58.0
+        rn = B.noise('4D', 'FBM', 3.0, "ray streaks")
+        sockin(rn, "Scale").default_value = 1.0
+        sockin(rn, "Roughness").default_value = 0.62
+        B.L(sockout(rsc, "Vector"), sockin(rn, "Vector"))
+        streak = B.MR(0.56, 0.72, 0.0, 1.0, "ray streak gate", 'SMOOTHSTEP')
+        B.L(sockout(rn, "Fac"), streak.inputs[0])
+        # Radial reach: nothing inside the rim, everything gone by a few
+        # crater radii out.
+        near = B.MR(0.22, 0.36, 0.0, 1.0, "ray inner", 'SMOOTHSTEP')
+        B.L(rlen.outputs[0], near.inputs[0])
+        far = B.MR(0.36, 2.60, 1.0, 0.0, "ray outer", 'SMOOTHSTEP')
+        B.L(rlen.outputs[0], far.inputs[0])
+        reach = B.M('MULTIPLY', label="ray reach")
+        B.L(near.outputs["Result"], reach.inputs[0])
+        B.L(far.outputs["Result"], reach.inputs[1])
+        # Only the youngest craters still have rays; the rest have been
+        # gardened away by micrometeorites.
+        sep = B.N("ShaderNodeSeparateXYZ", "ray cell rnd")
+        B.L(sockout(vor, "Color"), sep.inputs["Vector"])
+        fresh = B.M('GREATER_THAN', y=0.82, label="ray fresh")
+        B.L(sep.outputs["Z"], fresh.inputs[0])
+        r1 = B.M('MULTIPLY', label="ray shape")
+        B.L(streak.outputs["Result"], r1.inputs[0])
+        B.L(reach.outputs[0], r1.inputs[1])
+        r2 = B.M('MULTIPLY', label="ray gated")
+        B.L(r1.outputs[0], r2.inputs[0])
+        B.L(fresh.outputs[0], r2.inputs[1])
+        rays = B.M('MULTIPLY', label="rays", clamp=True)
+        B.L(r2.outputs[0], rays.inputs[0])
+        B.L(S["Crater Ray Amount"], rays.inputs[1])
+
+    # ---- albedo: darken the seas, then lay the rays over everything -------
+    consumers = splice(tree, land, 2)
+    dark = B.mix("maria tone")
+    dark.blend_type = 'MULTIPLY'
+    dark.inputs[7].default_value = (0.38, 0.375, 0.395, 1.0)
+    B.L(maria.outputs[0], dark.inputs[0])
+    B.L(land.outputs[2], dark.inputs[6])
+    out = dark
+    if rays is not None:
+        bright = B.mix("ray tone")
+        bright.blend_type = 'MULTIPLY'
+        bright.inputs[7].default_value = (1.85, 1.82, 1.78, 1.0)
+        B.L(rays.outputs[0], bright.inputs[0])
+        B.L(dark.outputs[2], bright.inputs[6])
+        out = bright
+    reconnect(tree, out.outputs[2], consumers)
+    return "lunar_maria"
 
 
 def vegetation_clumping(tree, B, S, P):
@@ -421,41 +640,161 @@ def vegetation_clumping(tree, B, S, P):
 
 
 def craters(tree, B, S, P, FIELD):
-    """Impact craters: a bowl with a raised rim, fed into the micro-relief.
+    """Impact craters: bowls with raised rims, fed into the micro-relief.
 
     Deliberately modulates the existing micro-displacement chain rather than
     adding a second displacement path, because raising displaced micropolygon
     count is the one change known to have caused out-of-memory kills here.
+
+    Size distribution is the whole problem. One Voronoi cell carrying one
+    crater of one fixed radius tiles the surface with identical circles, and a
+    moon covered in identical circles reads as bubble wrap, not as four
+    billion years of bombardment. Real crater counts follow a power law: a few
+    basins, many more small ones, and untouched ground between them. Two
+    things fix it -- each cell draws its own radius from the cell's random
+    colour, and a fraction of cells draw no crater at all -- and a second,
+    coarser pass adds the basins the fine pass is too dense to contain.
     """
     micro = need(tree, "micro_bu")
-    vor = B.voronoi('4D', 'F1', "crater cells")
-    sockin(vor, "Randomness").default_value = 0.85
-    B.L(P, sockin(vor, "Vector"))
-    B.L(S["Crater Scale"], sockin(vor, "Scale"))
-    d = sockout(vor, "Distance")
-    bowl = B.MR(0.0, 0.42, -1.0, 0.0, "crater bowl", 'SMOOTHSTEP')
-    B.L(d, bowl.inputs[0])
-    rim = B.MR(0.30, 0.46, 0.0, 1.0, "crater rim in", 'SMOOTHSTEP')
-    B.L(d, rim.inputs[0])
-    rim2 = B.MR(0.46, 0.60, 1.0, 0.0, "crater rim out", 'SMOOTHSTEP')
-    B.L(d, rim2.inputs[0])
-    rimm = B.M('MULTIPLY', label="crater rim")
-    B.L(rim.outputs["Result"], rimm.inputs[0])
-    B.L(rim2.outputs["Result"], rimm.inputs[1])
-    rw = B.M('MULTIPLY', y=0.55, label="rim height")
-    B.L(rimm.outputs[0], rw.inputs[0])
-    prof = B.M('ADD', label="crater profile")
-    B.L(bowl.outputs["Result"], prof.inputs[0])
-    B.L(rw.outputs[0], prof.inputs[1])
+
+    def layer(scale_sock, scale_mul, rmin, rmax, gate, depth, tag, peak=False):
+        vor = B.voronoi('4D', 'F1', "crater cells " + tag)
+        sockin(vor, "Randomness").default_value = 0.85
+        B.L(P, sockin(vor, "Vector"))
+        if scale_mul == 1.0:
+            B.L(scale_sock, sockin(vor, "Scale"))
+            cell_scale = scale_sock
+        else:
+            sc = B.M('MULTIPLY', y=scale_mul, label="crater scale " + tag)
+            B.L(scale_sock, sc.inputs[0])
+            B.L(sc.outputs[0], sockin(vor, "Scale"))
+            cell_scale = sc.outputs[0]
+        d = sockout(vor, "Distance")
+        sep = B.N("ShaderNodeSeparateXYZ", "crater cell rnd " + tag)
+        B.L(sockout(vor, "Color"), sep.inputs["Vector"])
+
+        # Per-cell radius, drawn along a power law rather than uniformly.
+        # Crater counts go as roughly D^-2: small ones are not merely more
+        # common, they outnumber the large ones by orders of magnitude. Drawing
+        # the radius uniformly gave every cell a middling crater, which is why
+        # the surface read as polka dots rather than as bombardment.
+        u = B.M('POWER', y=1.6, label="crater size law " + tag)
+        B.L(sep.outputs["Y"], u.inputs[0])
+        rad = B.MR(0.0, 1.0, rmin, rmax, "crater radius " + tag)
+        B.L(u.outputs[0], rad.inputs[0])
+        dn0 = B.M('DIVIDE', label="crater d/r " + tag)
+        B.L(d, dn0.inputs[0])
+        B.L(rad.outputs["Result"], dn0.inputs[1])
+
+        # Craters are not circles. An impact excavates along whatever the
+        # target rock will give it, so rims are polygonal, scalloped, and
+        # slumped on one side. Perturbing the normalised radius by a noise at a
+        # few cycles per crater makes the outline wander without moving the
+        # crater, which is the whole difference between a hole and a sticker.
+        en = B.noise('3D', 'FBM', 3.0, "crater edge " + tag)
+        B.L(P, sockin(en, "Vector"))
+        esc = B.M('MULTIPLY', y=3.6, label="crater edge scale " + tag)
+        B.L(cell_scale, esc.inputs[0])
+        B.L(esc.outputs[0], sockin(en, "Scale"))
+        ectr = B.M('SUBTRACT', y=0.5, label="crater edge centred " + tag)
+        B.L(sockout(en, "Fac"), ectr.inputs[0])
+        eamt = B.M('MULTIPLY', y=0.30, label="crater edge amount " + tag)
+        B.L(ectr.outputs[0], eamt.inputs[0])
+        eone = B.M('ADD', x=1.0, label="crater edge warp " + tag)
+        B.L(eamt.outputs[0], eone.inputs[1])
+        dn = B.M('MULTIPLY', label="crater d/r warped " + tag)
+        B.L(dn0.outputs[0], dn.inputs[0])
+        B.L(eone.outputs[0], dn.inputs[1])
+
+        # A simple crater is about five times as wide as it is deep, and its
+        # rim stands only a twentieth of its depth above the surrounding
+        # ground. The first pass had the rim at over half the depth, which is
+        # what made these read as blisters rather than as holes -- and the
+        # floor was a point rather than a floor.
+        bowl = B.MR(0.30, 0.80, -1.0, 0.0, "crater bowl " + tag, 'SMOOTHSTEP')
+        B.L(dn.outputs[0], bowl.inputs[0])
+        rim = B.MR(0.72, 0.94, 0.0, 1.0, "crater rim in " + tag, 'SMOOTHSTEP')
+        B.L(dn.outputs[0], rim.inputs[0])
+        rim2 = B.MR(0.94, 1.22, 1.0, 0.0, "crater rim out " + tag, 'SMOOTHSTEP')
+        B.L(dn.outputs[0], rim2.inputs[0])
+        rimm = B.M('MULTIPLY', label="crater rim " + tag)
+        B.L(rim.outputs["Result"], rimm.inputs[0])
+        B.L(rim2.outputs["Result"], rimm.inputs[1])
+        rw = B.M('MULTIPLY', y=0.22, label="rim height " + tag)
+        B.L(rimm.outputs[0], rw.inputs[0])
+        prof = B.M('ADD', label="crater profile " + tag)
+        B.L(bowl.outputs["Result"], prof.inputs[0])
+        B.L(rw.outputs[0], prof.inputs[1])
+
+        if peak:
+            # Above a few tens of kilometres a crater's floor rebounds and
+            # throws up a central peak. Only the large end of this layer gets
+            # one, which is another thing distinguishing big craters from
+            # small ones besides being bigger.
+            pk = B.MR(0.0, 0.26, 0.55, 0.0, "central peak " + tag, 'SMOOTHSTEP')
+            B.L(dn.outputs[0], pk.inputs[0])
+            pkg = B.M('GREATER_THAN', y=rmin + (rmax - rmin) * 0.62,
+                      label="peak threshold " + tag)
+            B.L(rad.outputs["Result"], pkg.inputs[0])
+            pkm = B.M('MULTIPLY', label="peak gated " + tag)
+            B.L(pk.outputs["Result"], pkm.inputs[0])
+            B.L(pkg.outputs[0], pkm.inputs[1])
+            prof2 = B.M('ADD', label="crater + peak " + tag)
+            B.L(prof.outputs[0], prof2.inputs[0])
+            B.L(pkm.outputs[0], prof2.inputs[1])
+            prof = prof2
+
+        # Empty ground: cells below the gate never took a hit.
+        hit = B.M('GREATER_THAN', y=gate, label="crater hit " + tag)
+        B.L(sep.outputs["X"], hit.inputs[0])
+        g0 = B.M('MULTIPLY', label="crater gated " + tag)
+        B.L(prof.outputs[0], g0.inputs[0])
+        B.L(hit.outputs[0], g0.inputs[1])
+
+        # Age. A crater floor fills, a rim slumps, a neighbour lands on top.
+        # Scaling each cell's whole profile by its own random gives a surface
+        # where some craters are crisp and some are barely readable ghosts,
+        # which is what four billion years looks like.
+        deg = B.MR(0.0, 1.0, 0.18, 1.0, "crater age " + tag)
+        B.L(sep.outputs["Z"], deg.inputs[0])
+        g0b = B.M('MULTIPLY', label="crater aged " + tag)
+        B.L(g0.outputs[0], g0b.inputs[0])
+        B.L(deg.outputs["Result"], g0b.inputs[1])
+
+        # Bigger craters cut deeper, which is what makes the size spread read
+        # as a spread rather than as one shape at several scales.
+        dscale = B.MR(rmin, rmax, 0.55, 1.45, "crater depth " + tag)
+        B.L(rad.outputs["Result"], dscale.inputs[0])
+        g1 = B.M('MULTIPLY', label="crater scaled " + tag)
+        B.L(g0b.outputs[0], g1.inputs[0])
+        B.L(dscale.outputs["Result"], g1.inputs[1])
+        w = B.M('MULTIPLY', y=depth, label="crater weight " + tag)
+        B.L(g1.outputs[0], w.inputs[0])
+        return w.outputs[0]
+
+    # Three passes an octave and a half apart. Two was not enough to carry a
+    # size range: the fine pass is too dense to hold a basin, and a basin pass
+    # dense enough to be visible everywhere leaves no untouched ground.
+    fine = layer(S["Crater Scale"], 1.0, 0.10, 0.46, 0.22, 0.85, "fine")
+    mid = layer(S["Crater Scale"], 0.42, 0.18, 0.62, 0.42, 1.40, "mid")
+    basin = layer(S["Crater Scale"], 0.14, 0.26, 0.80, 0.55, 2.40, "basin",
+                  peak=True)
+    stack = B.M('ADD', label="crater layers")
+    B.L(fine, stack.inputs[0])
+    B.L(mid, stack.inputs[1])
+    both = B.M('ADD', label="crater layers 2")
+    B.L(stack.outputs[0], both.inputs[0])
+    B.L(basin, both.inputs[1])
+
     land = B.M('SUBTRACT', x=1.0, label="crater land")
     B.L(sockout(FIELD, "sea_mask"), land.inputs[1])
     g1 = B.M('MULTIPLY', label="crater gate")
-    B.L(prof.outputs[0], g1.inputs[0])
+    B.L(both.outputs[0], g1.inputs[0])
     B.L(land.outputs[0], g1.inputs[1])
     amt = B.M('MULTIPLY', label="crater amt")
     B.L(g1.outputs[0], amt.inputs[0])
     B.L(S["Crater Amount"], amt.inputs[1])
-    hgt = B.M('MULTIPLY', y=6.0, label="crater height")
+    hgt = B.M('MULTIPLY', y=9.0, label="crater height")
     B.L(amt.outputs[0], hgt.inputs[0])
     consumers = splice(tree, micro, 0)
     add = B.M('ADD', label="micro+craters")
@@ -481,6 +820,7 @@ def apply_all(tree):
                      (vegetation_clumping, (tree, B, S, P)),
                      (dunes, (tree, B, S, P, FIELD)),
                      (craters, (tree, B, S, P, FIELD)),
+                     (lunar_maria, (tree, B, S, P, FIELD)),
                      (lava_crust, (tree, B, S, P, FIELD))):
         done.append(fn(*args))
     return {"sockets_added": added, "features": done, "nodes": len(tree.nodes)}

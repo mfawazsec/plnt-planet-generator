@@ -6,14 +6,15 @@
 
 | Change | Why |
 |---|---|
-| **Create Planet System works from the installed extension.** `core/scene.py` imported the packaged submodules relative to `__name__` instead of `__package__`, so `..field` resolved to `core.field`, missed, and fell back to loading `plnt_field.py` by path, which does not exist inside the extension. | The 3.0.0 zip could not build a planet on any Blender version. Reproduced on 5.2.1 with the shipped 3.0.0 install. |
-| `plnt_surface.py` loads `tech` and `core.surface_detail` as package modules when packaged. | Same failure one layer down: a path load strips the package context, so `surface_detail`'s own `from .nodeutil` import failed. |
-| `core/ui.py` imports `presets` and `shots` from `..`, not `.`. | They sit beside `core/`. The preset dropdown shipped empty (`'NONE'`), so Create Planet System failed on `preset = 'earthlike'`. |
 | `core/render.py`: new `apply_viewport_denoiser()`, called from `apply_performance()`. Low/Balanced/High select DLSS with Performance/Balanced/Quality upscaling. | Feature-detected from the enum, so 5.0 to 5.2 keep `AUTO` exactly as before. Viewport only: Cycles in 5.3 offers no DLSS for final renders. |
 | `tools/PlntBuild.psm1` finds Blender 5.3 first and no longer hard-codes the `5.2\python` folder. | Tooling followed the old release. |
 | Version 3.1.0. `blender_version_min` stays 5.0.0. | |
 
-Verified on 5.3.0: `extension build` and `validate` pass, `tools/test_install.ps1` reports 18 panels and 15 operators, and Create Planet System builds the earthlike system in about 12 s, with all three performance tiers reporting DLSS.
+Built on top of `main` as of PR #9, so the packaged-import fixes from #1 (`51a7c93`) are included and not repeated here.
+
+Verified on both 5.3.0 and 5.2.1 (5.2 run against an empty user config): `extension build` and `validate` pass, and `tools/test_install.ps1` reports 18 panels and 17 operators. Create Planet System builds the earthlike system in 12 to 14 s. All three performance tiers report DLSS on 5.3 and leave the viewport on `AUTO` on 5.2.
+
+The benchmarks below were run before merging `main`. The render timings use the September reference `.blend`. The viewport results concern Cycles and the driver, not PLNT's shaders, so they carry over.
 
 ## Does 5.3 render PLNT faster?
 
